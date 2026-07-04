@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>連立方程式ゲーム</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #container {
+      width: 400px;
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      border-radius: 10px;
+    }
+    #question {
+      font-size: 20px;
+      margin-bottom: 10px;
+      text-align: center;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+    #inputArea {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #f8f9fa;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    .input-group label {
+      font-weight: bold;
+      font-size: 18px;
+      min-width: 18px;
+      color: #333;
+    }
+    .input-group input {
+      width: 70px;
+      font-size: 18px;
+      padding: 5px;
+      text-align: center;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-family: monospace;
+    }
+    .input-group input:focus {
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 0 0 2px #007bff;
+    }
+    .input-group input[type="number"]::-webkit-inner-spin-button,
+    .input-group input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .input-group input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    button {
+      padding: 10px 16px;
+      margin: 3px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+      background: #f8f8f8;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e0e0e0;
+    }
+    .btn-primary {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    .btn-primary:hover {
+      background: #0069d9;
+    }
+    #time, #score {
+      margin-top: 5px;
+      text-align: center;
+      font-size: 16px;
+    }
+    #timerDisplay {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      color: #28a745;
+      padding: 8px;
+      background: #f0fff0;
+      border-radius: 8px;
+      margin: 8px 0;
+      font-family: monospace;
+      letter-spacing: 2px;
+    }
+    #timerDisplay.running {
+      color: #dc3545;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    #drawing {
+      border: 1px solid #000;
+      touch-action: none;
+      margin-top: 10px;
+      background: white;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 320 / 180;
+    }
+    .mode-btn {
+      background: #d4edda;
+      border-color: #28a745;
+      padding: 12px 20px;
+      font-weight: bold;
+    }
+    .mode-btn:hover {
+      background: #c3e6cb;
+    }
+    #home h2 {
+      text-align: center;
+    }
+    #home div {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .note {
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+      margin: 5px 0;
+    }
+    .flex-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .progress {
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .badge {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 2px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="container">
+
+  <!-- ホーム画面 -->
+  <div id="home">
+    <h2>⚡ 連立方程式 ⚡</h2>
+    <div>
+      <button class="mode-btn" onclick="startGame('random')">無限モード</button>
+      <button class="mode-btn" onclick="startGame('challenge')">チャレンジ</button>
+      <button class="mode-btn" onclick="startGame('measure')">測定モード</button>
+    </div>
+    <p class="note">※ 分数は a/b の形式で入力 (例: 1/2)</p>
+    <p class="note">※ x と y は別々の欄に入力</p>
+    <p class="note">⏱ 測定モードではタイマーが表示されます</p>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div id="game" style="display:none;">
+    <div id="question"></div>
+
+    <!-- タイマー表示（測定モードのみ表示） -->
+    <div id="timerDisplay" style="display:none;">⏱ 00:00</div>
+
+    <div id="inputArea">
+      <div class="input-group">
+        <label>x =</label>
+        <input type="number" id="inputX" step="any" placeholder="x">
+      </div>
+      <div class="input-group">
+        <label>y =</label>
+        <input type="number" id="inputY" step="any" placeholder="y">
+      </div>
+      <button class="btn-primary" onclick="checkAnswer()">解答</button>
+      <button onclick="toggleMinus()">±</button>
+    </div>
+
+    <div id="time"></div>
+    <div id="score"></div>
+    <div class="progress" id="progressDisplay"></div>
+    <div class="flex-row">
+      <button onclick="backHome()">🏠 ホーム</button>
+    </div>
+
+    <h3 style="text-align:center;">📝 メモ欄</h3>
+    <canvas id="drawing" width="320" height="180"></canvas><br>
+    <div style="text-align:center;">
+      <button onclick="clearCanvas()">🧹 リセット</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- グローバル ----
+  let mode, a1, b1, c1, a2, b2, c2;
+  let xAns, yAns;
+  let score = 0, questionCount = 0, totalTime = 0;
+  const maxQuestions = 10;
+  let startTime;
+  let timerInterval = null;
+  let timerSeconds = 0;
+
+  const canvas = document.getElementById('drawing');
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+
+  // ---- Canvas 手書き ----
+  canvas.addEventListener('pointerdown', e => {
+    drawing = true;
+    ctx.beginPath();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    ctx.moveTo(x, y);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  });
+  canvas.addEventListener('pointerup', () => { drawing = false; });
+  canvas.addEventListener('pointerleave', () => { drawing = false; });
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // ---- ユーティリティ ----
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function toFraction(v) {
+    if (Number.isInteger(v)) return v.toString();
+    let denom = 1;
+    while (Math.abs(v * denom - Math.round(v * denom)) > 0.001 && denom <= 20) denom++;
+    let numer = Math.round(v * denom);
+    if (denom === 1) return numer.toString();
+    return numer + "/" + denom;
+  }
+
+  function formatTime(seconds) {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(Math.floor(seconds % 60)).padStart(2, '0');
+    return `⏱ ${m}:${s}`;
+  }
+
+  // ---- タイマー制御 ----
+  function startTimer() {
+    if (timerInterval) return;
+    timerSeconds = 0;
+    const display = document.getElementById('timerDisplay');
+    display.textContent = formatTime(0);
+    display.style.display = 'block';
+    display.classList.add('running');
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      display.textContent = formatTime(timerSeconds);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    const display = document.getElementById('timerDisplay');
+    display.classList.remove('running');
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerSeconds = 0;
+    const display = document.getElementById('timerDisplay');
+    display.textContent = formatTime(0);
+    display.style.display = 'none';
+  }
+
+  // ---- ゲーム開始 ----
+  function startGame(selectedMode) {
+    mode = selectedMode;
+    score = 0;
+    questionCount = 0;
+    totalTime = 0;
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    
+    // タイマー表示の初期化
+    resetTimer();
+    if (mode === 'measure') {
+      document.getElementById('timerDisplay').style.display = 'block';
+      document.getElementById('timerDisplay').textContent = formatTime(0);
+    } else {
+      document.getElementById('timerDisplay').style.display = 'none';
+    }
+    
+    generateQuestion();
+    updateScore();
+    updateProgress();
+    clearCanvas();
+    document.getElementById('time').innerText = '';
+  }
+
+  // ---- 連立方程式生成 ----
+  function generateQuestion() {
+    const r = () => Math.random();
+    const genX = () => {
+      const type = Math.floor(r() * 3);
+      if (type === 0) return rand(-8, 8);
+      else if (type === 1) return Math.round((rand(-80, 80)) / 10);
+      else {
+        let denom = rand(2, 6);
+        let numer = rand(-denom * 4, denom * 4);
+        return numer / denom;
+      }
+    };
+    xAns = genX();
+    yAns = genX();
+
+    let a1, b1, a2, b2;
+    do {
+      a1 = rand(-5, 5);
+      b1 = rand(-5, 5);
+    } while (a1 === 0 && b1 === 0);
+    do {
+      a2 = rand(-5, 5);
+      b2 = rand(-5, 5);
+    } while (a2 === 0 && b2 === 0 || (a1*b2 - a2*b1 === 0));
+
+    c1 = a1 * xAns + b1 * yAns;
+    c2 = a2 * xAns + b2 * yAns;
+
+    const fmt = (v) => {
+      if (Number.isInteger(v)) return v.toString();
+      return (Math.round(v * 10) / 10).toString();
+    };
+
+    const eq1 = `${fmt(a1)}x ${b1 >= 0 ? '+' : '-'} ${Math.abs(fmt(b1))}y = ${fmt(c1)}`;
+    const eq2 = `${fmt(a2)}x ${b2 >= 0 ? '+' : '-'} ${Math.abs(fmt(b2))}y = ${fmt(c2)}`;
+
+    document.getElementById('question').innerHTML = 
+      `📐 連立方程式を解け<br>① ${eq1}<br>② ${eq2}`;
+    
+    document.getElementById('inputX').value = '';
+    document.getElementById('inputY').value = '';
+    document.getElementById('inputX').style.border = '';
+    document.getElementById('inputY').style.border = '';
+    document.getElementById('time').innerHTML = '';
+    startTime = Date.now();
+    
+    // 測定モードならタイマー開始（最初の問題で開始）
+    if (mode === 'measure' && questionCount === 0) {
+      startTimer();
+    }
+    
+    document.getElementById('inputX').focus();
+  }
+
+  // ---- 解答チェック ----
+  function checkAnswer() {
+    const inputX = document.getElementById('inputX');
+    const inputY = document.getElementById('inputY');
+    const xStr = inputX.value.trim();
+    const yStr = inputY.value.trim();
+
+    if (xStr === '' || yStr === '') {
+      document.getElementById('time').innerText = 'x と y の両方を入力してください';
+      return;
+    }
+
+    let ux, uy;
+    try {
+      ux = parseFraction(xStr);
+      uy = parseFraction(yStr);
+    } catch (e) {
+      document.getElementById('time').innerText = '正しい数字または分数を入力 (例: 1/2)';
+      return;
+    }
+
+    if (isNaN(ux) || isNaN(uy)) {
+      document.getElementById('time').innerText = '数値が無効です';
+      return;
+    }
+
+    const elapsed = (Date.now() - startTime) / 1000;
+
+    const okX = Math.abs(ux - xAns) < 0.1;
+    const okY = Math.abs(uy - yAns) < 0.1;
+
+    if (okX && okY) {
+      score++;
+      updateScore();
+
+      if (mode === 'measure') {
+        questionCount++;
+        totalTime += elapsed;
+        updateProgress();
+        if (questionCount >= maxQuestions) {
+          stopTimer();
+          const totalSec = timerSeconds;
+          alert(`🎉 測定終了！\n正解数: ${score}/${maxQuestions}\n合計時間: ${formatTime(totalSec)}`);
+          backHome();
+          return;
+        }
+        // 次の問題へ（タイマーは継続）
+        generateQuestion();
+        // 問題数表示を更新
+        updateProgress();
+      } else {
+        document.getElementById('time').innerHTML = `✅ 正解！ ${elapsed.toFixed(1)} 秒`;
+        generateQuestion();
+      }
+    } else {
+      if (mode === 'challenge') {
+        stopTimer();
+        alert(`❌ 不正解！ 正解は x = ${toFraction(xAns)}, y = ${toFraction(yAns)}`);
+        backHome();
+        return;
+      } else {
+        let msg = '❌ 不正解！ もう一度チャレンジ';
+        if (okX && !okY) msg = '❌ y の値が違います';
+        else if (!okX && okY) msg = '❌ x の値が違います';
+        document.getElementById('time').innerText = msg;
+        if (!okX) inputX.style.border = '2px solid #ff6b6b';
+        else inputX.style.border = '';
+        if (!okY) inputY.style.border = '2px solid #ff6b6b';
+        else inputY.style.border = '';
+        setTimeout(() => {
+          inputX.style.border = '';
+          inputY.style.border = '';
+        }, 2000);
+      }
+    }
+  }
+
+  function parseFraction(str) {
+    str = str.trim();
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length !== 2) throw new Error('invalid fraction');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+      if (den === 0) throw new Error('divide by zero');
+      return num / den;
+    }
+    return parseFloat(str);
+  }
+
+  function updateScore() {
+    document.getElementById('score').innerHTML = `🏆 正解数: ${score}`;
+  }
+
+  function updateProgress() {
+    if (mode === 'measure') {
+      document.getElementById('progressDisplay').innerHTML = 
+        `📊 進捗: ${questionCount}/${maxQuestions} 問完了`;
+    } else {
+      document.getElementById('progressDisplay').innerHTML = '';
+    }
+  }
+
+  function backHome() {
+    stopTimer();
+    resetTimer();
+    document.getElementById('home').style.display = 'block';
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('time').innerHTML = '';
+    document.getElementById('progressDisplay').innerHTML = '';
+    document.getElementById('inputX').style.border = '';
+    document.getElementById('inputY').style.border = '';
+    document.getElementById('timerDisplay').style.display = 'none';
+  }
+
+  function toggleMinus() {
+    const xInput = document.getElementById('inputX');
+    const yInput = document.getElementById('inputY');
+    const active = document.activeElement;
+    let target = null;
+    if (active === xInput) target = xInput;
+    else if (active === yInput) target = yInput;
+    else {
+      target = xInput;
+      target.focus();
+    }
+    const val = target.value.trim();
+    if (val === '') {
+      target.value = '-';
+      return;
+    }
+    if (val.startsWith('-')) {
+      target.value = val.substring(1);
+    } else {
+      target.value = '-' + val;
+    }
+    target.focus();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const game = document.getElementById('game');
+      if (game.style.display !== 'none') {
+        checkAnswer();
+      }
+    }
+  });
+</script>
+
+</body>
+  </html>
