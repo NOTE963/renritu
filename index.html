@@ -77,7 +77,6 @@
       display: block;
     }
 
-    /* 共通 */
     .status-bar {
       display: flex;
       justify-content: space-between;
@@ -257,7 +256,6 @@
       font-size: 0.85rem;
     }
 
-    /* ランキング */
     .rank-section {
       background: #0f1e2b;
       border-radius: 20px;
@@ -350,7 +348,6 @@
       justify-content: center !important;
     }
 
-    /* 対戦 */
     .battle-section {
       background: #0f1e2b;
       border-radius: 20px;
@@ -467,7 +464,6 @@
       padding: 2px 0;
       border-bottom: 1px solid #1a3343;
     }
-
     .battle-log .log-entry:last-child {
       border-bottom: none;
     }
@@ -513,7 +509,6 @@
     .setting-row select:focus {
       border-color: #5a9ec9;
     }
-
     .setting-row input:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -610,7 +605,7 @@
 <body>
   <div class="app">
     <!-- タブ -->
-    <div class="tabs">
+    <div class="tabs" id="tabContainer">
       <button class="tab-btn active" data-tab="tabChallenge">挑戦</button>
       <button class="tab-btn" data-tab="tabBattle">対戦</button>
       <button class="tab-btn" data-tab="tabRanking">ランキング</button>
@@ -810,7 +805,6 @@
         } catch (e) {}
       }
 
-      let bgmInterval = null;
       let bgmRunning = false;
       let bgmIndex = 0;
       let bgmTimeout = null;
@@ -909,14 +903,46 @@
       const battleStartBtn = document.getElementById('battleStartBtn');
       const battleLog = document.getElementById('battleLog');
 
-      // タブ
-      const tabs = document.querySelectorAll('.tab-btn');
-      const contents = {
-        challenge: document.getElementById('tabChallenge'),
-        battle: document.getElementById('tabBattle'),
-        ranking: document.getElementById('tabRanking'),
-        settings: document.getElementById('tabSettings')
+      // ============================================================
+      //  タブ制御 (修正箇所)
+      // ============================================================
+      const tabContainer = document.getElementById('tabContainer');
+      const tabContents = {
+        tabChallenge: document.getElementById('tabChallenge'),
+        tabBattle: document.getElementById('tabBattle'),
+        tabRanking: document.getElementById('tabRanking'),
+        tabSettings: document.getElementById('tabSettings')
       };
+
+      // タブ切り替え関数
+      function switchTab(tabId) {
+        // 全てのタブボタンのactiveを外す
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        // 指定されたタブボタンをactiveに
+        const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (targetBtn) targetBtn.classList.add('active');
+
+        // 全てのコンテンツを非表示
+        Object.keys(tabContents).forEach(key => {
+          tabContents[key].classList.remove('active');
+        });
+        // 指定されたコンテンツを表示
+        if (tabContents[tabId]) {
+          tabContents[tabId].classList.add('active');
+        }
+      }
+
+      // タブボタンにイベントリスナーを設定
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const tabId = this.dataset.tab;
+          if (tabId) {
+            switchTab(tabId);
+          }
+        });
+      });
 
       // ============================================================
       //  Cookie
@@ -1213,7 +1239,6 @@
         if (battleState.isStarted && battleState.oppRoundDone) {
           opponentRoundStatus.textContent = '完了 ✓';
         }
-        // バトルステータス
         if (battleState.isStarted && battleState.round <= battleState.maxRounds) {
           battleStatus.textContent = `対戦中 (ラウンド ${battleState.round}/${battleState.maxRounds})`;
         } else if (battleState.isStarted && battleState.round > battleState.maxRounds) {
@@ -1230,7 +1255,6 @@
         battleStartBtn.disabled = !(battleState.isHost && battleState.isReady && battleState.roomId);
       }
 
-      // 対戦用問題生成 (桁数はホストの設定を使用)
       function generateBattleEquation() {
         const digit = getDigit();
         const maxVal = Math.pow(10, digit) - 1;
@@ -1262,7 +1286,6 @@
         eq2c.textContent = eq.c2;
       }
 
-      // ルーム作成
       function createRoom() {
         if (!isNameLocked) { toastMessage('先に名前を設定してください'); return; }
         if (battleState.roomId) { toastMessage('既にルームに参加しています'); return; }
@@ -1314,7 +1337,6 @@
         }
       }
 
-      // ルーム参加
       function joinRoom() {
         if (!isNameLocked) { toastMessage('先に名前を設定してください'); return; }
         if (battleState.roomId) { toastMessage('既にルームに参加しています'); return; }
@@ -1330,7 +1352,6 @@
             const players = data.players || {};
             const playerCount = Object.keys(players).length;
             if (playerCount >= 2) { toastMessage('ルームは満員です'); return; }
-            // 参加
             const updates = {};
             updates[`players/${playerId}`] = { username: currentUsername, ready: false, score: 0, roundDone: false,
               joinedAt: Date.now() };
@@ -1361,7 +1382,6 @@
         }
       }
 
-      // ルーム監視
       function listenRoom(roomId) {
         if (battleState.roomRef) { battleState.roomRef.off(); }
         battleState.roomRef = battleRef.child(roomId);
@@ -1375,7 +1395,6 @@
           const players = data.players || {};
           const playerIds = Object.keys(players);
           const myId = battleState.playerId;
-          // 自分以外のプレイヤーを探す
           let oppId = null;
           let oppName = '待機中';
           let oppReady = false;
@@ -1411,7 +1430,6 @@
           battleState.isHost = data.host === myId;
           battleState.battleActive = data.started && !data.finished;
 
-          // 対戦終了チェック
           if (data.finished) {
             battleState.battleActive = false;
             const winner = myScore > oppScore ? 'あなた' : myScore < oppScore ? oppName : '引き分け';
@@ -1420,24 +1438,20 @@
             stopBgm();
           }
 
-          // ラウンド更新
           if (data.currentEq && data.started && !data.finished) {
             battleState.currentBattleEq = data.currentEq;
             if (battleState.isStarted && battleState.round <= battleState.maxRounds) {
               displayBattleEquation(data.currentEq);
-              // 自分の解答状態
               if (!battleState.myRoundDone && !battleState.roundSolved) {
                 isGameActive = true;
                 isSolved = false;
                 checkBtn.disabled = false;
                 statusMsg.textContent = '対戦中';
                 statusMsg.style.color = '#b3d9f0';
-                // タイマーは既に動いている
               }
             }
           }
 
-          // ラウンド開始時タイマーリセット
           if (data.started && !data.finished && battleState.round > 0 && battleState.round <= battleState.maxRounds) {
             if (battleState.round !== parseInt(battleRound.textContent.match(/\d+/)?.[0] || '0')) {
               resetTimer();
@@ -1449,7 +1463,6 @@
 
           updateBattleUI();
 
-          // 両方のプレイヤーが準備完了でホストなら開始ボタン有効
           const allReady = playerIds.every(id => players[id]?.ready === true);
           if (battleState.isHost && allReady && playerIds.length === 2 && !data.started) {
             battleStartBtn.disabled = false;
@@ -1457,33 +1470,24 @@
             battleStartBtn.disabled = true;
           }
 
-          // ラウンド完了チェック (両方完了したら次のラウンドへ)
           if (data.started && !data.finished) {
             const allDone = playerIds.every(id => players[id]?.roundDone === true);
             if (allDone && battleState.round > 0 && battleState.round <= battleState.maxRounds) {
-              // 次のラウンドへ (ホストが処理)
               if (battleState.isHost) {
                 nextRound();
               }
             }
           }
 
-          // 対戦中の解答処理 (自分の解答を判定)
-          if (battleState.isStarted && !battleState.myRoundDone && battleState.currentBattleEq) {
-            // 既に解答済みならチェックしない
-          }
-
         }, (err) => { console.error('監視エラー:', err); });
       }
 
-      // 次のラウンドへ (ホストのみ)
       function nextRound() {
         if (!battleState.isHost) return;
         const roomId = battleState.roomId;
         if (!roomId) return;
         const nextRound = battleState.round + 1;
         if (nextRound > battleState.maxRounds) {
-          // 対戦終了
           battleRef.child(roomId).update({ finished: true, status: 'finished' });
           addBattleLog('対戦終了！');
           stopBgm();
@@ -1512,7 +1516,6 @@
         updateBattleUI();
       }
 
-      // 準備完了/解除
       function toggleReady() {
         if (!battleState.roomId || !battleState.playerId) { toastMessage('ルームに参加してください'); return; }
         const newReady = !battleState.isReady;
@@ -1524,7 +1527,6 @@
         addBattleLog(newReady ? '準備完了' : '準備解除');
       }
 
-      // 対戦開始 (ホストのみ)
       function startBattle() {
         if (!battleState.isHost) { toastMessage('ホストのみ開始できます'); return; }
         if (!battleState.roomId) { toastMessage('ルームがありません'); return; }
@@ -1567,7 +1569,6 @@
           toastMessage('開始失敗'); });
       }
 
-      // 対戦用解答チェック
       function checkBattleAnswer() {
         if (!battleState.battleActive || battleState.myRoundDone) {
           toastMessage('対戦がアクティブではありません');
@@ -1598,20 +1599,17 @@
           isGameActive = false;
           isSolved = true;
           updateBattleUI();
-          // 両方完了したら次のラウンドへ (監視で処理)
         } else {
           toastMessage('不正解');
           playWrongSound();
         }
       }
 
-      // ルーム退出
       function leaveRoom() {
         if (battleState.roomRef) { battleState.roomRef.off();
           battleState.roomRef = null; }
         if (battleState.roomId && battleState.playerId && battleRef) {
           battleRef.child(battleState.roomId + '/players/' + battleState.playerId).remove();
-          // ホストが抜けたらルーム削除
           if (battleState.isHost) {
             battleRef.child(battleState.roomId).remove().catch(() => {});
           }
@@ -1716,21 +1714,6 @@
       }
 
       // ============================================================
-      //  タブ切り替え
-      // ============================================================
-      tabs.forEach(btn => {
-        btn.addEventListener('click', () => {
-          tabs.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          Object.keys(contents).forEach(key => {
-            const el = contents[key];
-            const id = `tab${key.charAt(0).toUpperCase() + key.slice(1)}`;
-            el.classList.toggle('active', id === btn.dataset.tab);
-          });
-        });
-      });
-
-      // ============================================================
       //  ランキング桁タブ
       // ============================================================
       rankTabContainer.addEventListener('click', (e) => {
@@ -1788,7 +1771,6 @@
       // ============================================================
       //  イベントバインド
       // ============================================================
-      // 挑戦
       checkBtn.addEventListener('click', () => {
         if (battleState.battleActive) {
           checkBattleAnswer();
@@ -1799,17 +1781,14 @@
       newGameBtn.addEventListener('click', newGame);
       stopBtn.addEventListener('click', resetGame);
 
-      // 対戦
       createRoomBtn.addEventListener('click', createRoom);
       joinRoomBtn.addEventListener('click', joinRoom);
       leaveRoomBtn.addEventListener('click', leaveRoom);
       battleReadyBtn.addEventListener('click', toggleReady);
       battleStartBtn.addEventListener('click', startBattle);
 
-      // アカウント削除
       deleteAccountBtn.addEventListener('click', deleteAccount);
 
-      // Enterキー
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (document.activeElement === inputX || document.activeElement === inputY)) {
           if (battleState.battleActive) {
@@ -1836,14 +1815,12 @@
         statusMsg.textContent = '待機';
         resetTimer();
 
-        // 音声コンテキスト
         document.addEventListener('click', () => {
           if (!audioCtx) {
             try { audioCtx = new(window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
           }
         }, { once: true });
 
-        // 対戦用の初期状態
         updateBattleUI();
       }
 
