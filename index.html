@@ -1,1701 +1,798 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>連立方程式 タイムアタック</title>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
-  </script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js">
-  </script>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-    }
-    body {
-      background: #0d1a26;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-    }
-    .app {
-      max-width: 760px;
-      width: 100%;
-      background: #162b3b;
-      border-radius: 28px;
-      padding: 24px 20px 28px;
-      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.8);
-      border: 1px solid #2f4a5e;
-    }
-    .tabs {
-      display: flex;
-      gap: 4px;
-      background: #0f1e2b;
-      padding: 6px 8px;
-      border-radius: 40px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 10px 6px;
-      border: none;
-      background: transparent;
-      border-radius: 40px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: #8aadc2;
-      cursor: pointer;
-      transition: 0.15s;
-      min-width: 60px;
-    }
-    .tab-btn.active {
-      background: #2a4a60;
-      color: #f0f9ff;
-    }
-    .tab-btn:hover:not(.active) {
-      background: #1f384b;
-      color: #c5dceb;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0f1e2b;
-      border-radius: 40px;
-      padding: 8px 16px;
-      margin-bottom: 14px;
-      color: #c8dce8;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .timer {
-      font-size: 2.0rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      background: #0b1723;
-      padding: 0 16px;
-      border-radius: 30px;
-      color: #b3e4ff;
-      letter-spacing: 1px;
-    }
-    .status-msg {
-      background: #1a3343;
-      padding: 4px 16px;
-      border-radius: 30px;
-      font-weight: 500;
-      font-size: 0.85rem;
-    }
-    .eq-panel {
-      background: #0f1e2b;
-      border-radius: 24px;
-      padding: 18px 10px;
-      margin: 6px 0 16px;
-      border: 1px solid #2d4a5e;
-    }
-    .eq-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px 14px;
-      flex-wrap: wrap;
-      font-size: 1.5rem;
-      color: #e6f2fa;
-      font-weight: 500;
-      padding: 4px 0;
-    }
-    .eq-row span {
-      background: #162b3a;
-      padding: 0 14px;
-      border-radius: 24px;
-      min-width: 44px;
-      text-align: center;
-      border: 1px solid #2f5066;
-    }
-    .input-area {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 14px 24px;
-      margin: 14px 0 10px;
-    }
-    .input-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #0f1e2b;
-      padding: 2px 14px 2px 18px;
-      border-radius: 40px;
-      border: 1px solid #2f4a5e;
-    }
-    .input-group label {
-      color: #b2d3e8;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-    .input-group input {
-      background: #162b3a;
-      border: none;
-      padding: 8px 4px;
-      width: 72px;
-      border-radius: 24px;
-      color: white;
-      font-size: 1.2rem;
-      font-weight: 600;
-      text-align: center;
-      outline: 1px solid transparent;
-    }
-    .input-group input:focus {
-      outline: 1px solid #5a9ec9;
-    }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin: 10px 0 8px;
-    }
-    .btn {
-      background: #1f465e;
-      border: none;
-      border-bottom: 4px solid #0f2a3b;
-      padding: 12px 24px;
-      border-radius: 40px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #f2fcff;
-      cursor: pointer;
-      transition: 0.06s ease;
-      box-shadow: 0 5px 0 #0b1e2b;
-      flex: 1 0 auto;
-      min-width: 90px;
-    }
-    .btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #0b1e2b;
-    }
-    .btn-primary {
-      background: #3a7da8;
-      border-bottom-color: #1d4d6a;
-    }
-    .btn-success {
-      background: #2a8266;
-      border-bottom-color: #18523f;
-    }
-    .btn-danger {
-      background: #b14f4f;
-      border-bottom-color: #752f2f;
-    }
-    .btn-warning {
-      background: #c97d2b;
-      border-bottom-color: #8a5518;
-    }
-    .btn-secondary {
-      background: #4a6a7a;
-      border-bottom-color: #2a4a5a;
-    }
-    .btn:disabled {
-      opacity: 0.4;
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #0b1e2b;
-      pointer-events: none;
-    }
-    .toast {
-      background: #1a3343;
-      padding: 8px 16px;
-      border-radius: 30px;
-      color: #c7e4f5;
-      text-align: center;
-      font-weight: 500;
-      border-left: 4px solid #4f9bc9;
-      margin: 10px 0 4px;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-    }
-    .rank-section {
-      background: #0f1e2b;
-      border-radius: 24px;
-      padding: 14px 12px 16px;
-      border: 1px solid #2d4a5e;
-      margin-top: 4px;
-    }
-    .rank-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #c8e0ef;
-      font-weight: 600;
-      padding: 0 2px 10px 2px;
-      border-bottom: 1px solid #234a5e;
-      font-size: 0.9rem;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .rank-tabs {
-      display: flex;
-      gap: 4px;
-      background: #0f1e2b;
-      padding: 4px;
-      border-radius: 30px;
-      border: 1px solid #234a5e;
-      flex-wrap: wrap;
-    }
-    .rank-tab-btn {
-      padding: 4px 12px;
-      border: none;
-      background: transparent;
-      border-radius: 24px;
-      color: #8aadc2;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.75rem;
-      transition: 0.15s;
-    }
-    .rank-tab-btn.active {
-      background: #2a4a60;
-      color: #f0f9ff;
-    }
-    .rank-tab-btn:hover:not(.active) {
-      background: #1f384b;
-      color: #c5dceb;
-    }
-    .rank-list {
-      list-style: none;
-      margin: 8px 0 0 0;
-      max-height: 220px;
-      overflow-y: auto;
-      padding-right: 2px;
-    }
-    .rank-list li {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 14px;
-      margin: 3px 0;
-      background: #1a3343;
-      border-radius: 30px;
-      color: #e6f2fa;
-      border-left: 4px solid #3d7a9e;
-      font-weight: 500;
-      font-size: 0.9rem;
-      align-items: center;
-    }
-    .rank-list .rank {
-      color: #aacde2;
-      font-weight: 700;
-      margin-right: 10px;
-    }
-    .rank-list .time {
-      background: #1d4054;
-      padding: 0 14px;
-      border-radius: 24px;
-      font-weight: 600;
-      color: #b3e4ff;
-      font-size: 0.85rem;
-    }
-    .empty {
-      text-align: center;
-      color: #7b9eb3;
-      padding: 20px 0;
-      font-style: italic;
-      justify-content: center !important;
-    }
-    .settings {
-      background: #0f1e2b;
-      border-radius: 24px;
-      padding: 20px 16px;
-      border: 1px solid #2d4a5e;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .setting-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px 14px;
-      color: #d6eaf5;
-      font-weight: 500;
-    }
-    .setting-row label {
-      min-width: 80px;
-      font-size: 0.9rem;
-    }
-    .setting-row input,
-    .setting-row select {
-      background: #162b3a;
-      border: 1px solid #2f5066;
-      padding: 8px 14px;
-      border-radius: 24px;
-      color: white;
-      font-size: 0.9rem;
-      outline: none;
-      flex: 1;
-      min-width: 120px;
-    }
-    .setting-row input:focus,
-    .setting-row select:focus {
-      border-color: #5a9ec9;
-    }
-    .setting-row input:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .setting-row .btn {
-      flex: 0 1 auto;
-      padding: 8px 18px;
-      font-size: 0.85rem;
-    }
-    .name-locked {
-      color: #8aacbf;
-      font-size: 0.8rem;
-      margin-left: 8px;
-    }
-    .delete-section {
-      margin-top: 10px;
-      padding-top: 16px;
-      border-top: 1px solid #2f4a5e;
-      display: flex;
-      justify-content: flex-end;
-    }
-    .footer {
-      text-align: right;
-      color: #5a7d93;
-      font-size: 0.65rem;
-      margin-top: 10px;
-      opacity: 0.5;
-    }
-    .battle-status {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0f1e2b;
-      border-radius: 40px;
-      padding: 10px 16px;
-      margin-bottom: 12px;
-      color: #c8dce8;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .battle-score {
-      display: flex;
-      gap: 20px;
-      font-weight: 600;
-    }
-    .battle-score .score-you {
-      color: #7bc9a0;
-    }
-    .battle-score .score-opponent {
-      color: #f5a3a3;
-    }
-    .battle-round {
-      background: #1a3343;
-      padding: 2px 16px;
-      border-radius: 30px;
-      font-weight: 600;
-    }
-    .battle-opponent {
-      background: #1a3343;
-      padding: 2px 16px;
-      border-radius: 30px;
-      font-size: 0.85rem;
-    }
-    .battle-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin: 8px 0 10px;
-    }
-    .sound-control {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #8aacbf;
-      font-size: 0.8rem;
-      margin-top: 4px;
-      flex-wrap: wrap;
-    }
-    .sound-control input[type="range"] {
-      width: 80px;
-      background: #162b3a;
-      accent-color: #5a9ec9;
-      cursor: pointer;
-    }
-    .battle-room-input {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin: 6px 0;
-    }
-    .battle-room-input input {
-      background: #162b3a;
-      border: 1px solid #2f5066;
-      padding: 8px 14px;
-      border-radius: 24px;
-      color: white;
-      width: 140px;
-      outline: none;
-    }
-    .battle-room-input input:focus {
-      border-color: #5a9ec9;
-    }
-    .battle-room-input .btn {
-      flex: 0 1 auto;
-      padding: 8px 18px;
-      min-width: 60px;
-      font-size: 0.85rem;
-    }
-    .battle-result {
-      background: #1a3343;
-      border-radius: 30px;
-      padding: 10px 16px;
-      margin-top: 8px;
-      text-align: center;
-      color: #f0f9ff;
-      font-weight: 600;
-      font-size: 1.0rem;
-      border-left: 4px solid #f5a3a3;
-    }
-    .battle-room-status {
-      color: #7b9eb3;
-      font-size: 0.75rem;
-      min-width: 60px;
-    }
-    .battle-waiting-area {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin: 8px 0;
-    }
-    @media (max-width: 500px) {
-      .app {
-        padding: 14px 10px;
-      }
-      .eq-row {
-        font-size: 1.2rem;
-        gap: 4px 8px;
-      }
-      .eq-row span {
-        min-width: 34px;
-        padding: 0 8px;
-      }
-      .input-group input {
-        width: 60px;
-        font-size: 1.0rem;
-      }
-      .btn {
-        font-size: 0.8rem;
-        padding: 10px 14px;
-        min-width: 70px;
-      }
-      .timer {
-        font-size: 1.6rem;
-        padding: 0 10px;
-      }
-      .rank-tabs {
-        flex-wrap: wrap;
-      }
-      .battle-score {
-        gap: 12px;
-        font-size: 0.9rem;
-      }
-      .battle-room-input input {
-        width: 100px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>しりとりチェーン | オンライン対戦</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F2EEE3;
+    --paper-raised:#FAF8F1;
+    --ink:#26344B;
+    --ink-soft:#5B6B82;
+    --indigo:#2F4A7A;
+    --indigo-deep:#1C2E4A;
+    --gold:#C99A3D;
+    --vermillion:#C1432E;
+    --line:#D8D0BC;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(47,74,122,0.06), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(201,154,61,0.08), transparent 45%),
+      var(--paper);
+    font-family:"Zen Kaku Gothic New","Noto Sans JP",sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .stage{width:100%;max-width:460px;}
+  header.app-head{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:22px;
+    padding-left:2px;
+  }
+  header.app-head h1{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:900;
+    font-size:26px;
+    letter-spacing:.02em;
+    margin:0;
+    color:var(--indigo-deep);
+  }
+  header.app-head span.tag{
+    font-size:12px;
+    color:var(--ink-soft);
+    border-left:2px solid var(--line);
+    padding-left:10px;
+  }
+  .card{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 22px;
+    box-shadow:0 1px 0 rgba(38,52,75,0.04);
+  }
+  .screen{display:none;}
+  .screen.active{display:block;animation:rise .35s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 6px 2px;
+  }
+  input[type=text]{
+    width:100%;
+    font-family:inherit;
+    font-size:17px;
+    padding:12px 14px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s;
+  }
+  input[type=text]:focus{border-color:var(--indigo);}
+  .field{margin-bottom:16px;}
+
+  button{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:700;
+    font-size:15px;
+    border:none;
+    border-radius:12px;
+    padding:13px 18px;
+    cursor:pointer;
+    transition:transform .08s, background .15s;
+  }
+  button:active{transform:scale(.98);}
+  button.primary{background:var(--indigo);color:#fff;width:100%;}
+  button.primary:hover{background:var(--indigo-deep);}
+  button.primary:disabled{background:#B9C0CC;cursor:not-allowed;}
+  button.ghost{background:transparent;color:var(--indigo);border:1.5px solid var(--indigo);width:100%;}
+  button.small{padding:8px 12px;font-size:13px;border-radius:9px;}
+
+  .divider{
+    display:flex;align-items:center;gap:10px;
+    margin:22px 0;color:var(--ink-soft);font-size:12px;
+  }
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  .room-code{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:900;
+    font-size:38px;
+    letter-spacing:.12em;
+    color:var(--indigo-deep);
+    text-align:center;
+    margin:4px 0 2px;
+  }
+  .room-code-label{text-align:center;font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
+
+  .player-list{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .player-list li{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:14px;
+  }
+  .player-list li.turn{border-color:var(--gold);background:#FBF3E1;}
+  .player-list li.dead{opacity:.4;text-decoration:line-through;}
+  .badge{
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:var(--indigo);
+    color:#fff;
+  }
+  .badge.host{background:var(--gold);}
+  .badge.turn{background:var(--vermillion);}
+
+  .chain-wrap{
+    display:flex;flex-wrap:wrap;gap:6px 4px;
+    align-items:center;
+    max-height:240px;
+    overflow-y:auto;
+    padding:14px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin-bottom:16px;
+  }
+  .chain-empty{color:var(--ink-soft);font-size:13px;padding:6px 2px;}
+  .word-pill{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:700;
+    font-size:14px;
+    background:#fff;
+    border:1.5px solid var(--indigo);
+    color:var(--indigo-deep);
+    padding:6px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .word-pill .by{
+    font-family:"Zen Kaku Gothic New",sans-serif;
+    font-weight:400;
+    font-size:10px;
+    color:var(--ink-soft);
+    display:block;
+    margin-top:1px;
+  }
+  .link-arrow{color:var(--gold);font-size:15px;}
+
+  .turn-banner{
+    text-align:center;
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:14px;
+    background:var(--paper);
+    border:1px solid var(--line);
+  }
+  .turn-banner.mine{background:#FBF3E1;border-color:var(--gold);color:var(--indigo-deep);}
+  .turn-banner .timer{color:var(--vermillion);font-weight:900;}
+
+  .input-row{display:flex;gap:8px;}
+  .input-row input{flex:1;}
+  .input-row button{flex-shrink:0;}
+
+  .msg{
+    font-size:13px;
+    margin-top:8px;
+    min-height:18px;
+    color:var(--vermillion);
+  }
+
+  .result-word{
+    text-align:center;
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-weight:900;
+    font-size:22px;
+    color:var(--indigo-deep);
+    margin:6px 0 4px;
+  }
+  .result-sub{text-align:center;color:var(--ink-soft);font-size:13px;margin-bottom:20px;}
+
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.6;}
+  .footer-note{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:16px;}
+  .code-share{
+    display:flex;gap:8px;margin-bottom:22px;
+  }
+  .code-share input{flex:1;background:var(--paper);text-align:center;font-family:"Zen Maru Gothic",sans-serif;font-weight:700;letter-spacing:.1em;}
+</style>
 </head>
 <body>
-  <div class="app">
-    <!-- タブ -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="tabChallenge">挑戦</button>
-      <button class="tab-btn" data-tab="tabBattle">対戦</button>
-      <button class="tab-btn" data-tab="tabRanking">ランキング</button>
-      <button class="tab-btn" data-tab="tabSettings">設定</button>
+<div class="stage">
+  <header class="app-head">
+    <h1>しりとりチェーン</h1>
+    <span class="tag">友だちとオンライン対戦</span>
+  </header>
+
+  <!-- ENTRY SCREEN -->
+  <section id="screen-entry" class="screen active">
+    <div class="card">
+      <div class="field">
+        <label for="name-input">あなたの名前</label>
+        <input type="text" id="name-input" maxlength="12" placeholder="例: たなか">
+      </div>
+
+      <button class="primary" id="btn-create">新しい部屋を作る</button>
+
+      <div class="divider">または</div>
+
+      <div class="field">
+        <label for="join-input">部屋コードを入力</label>
+        <input type="text" id="join-input" maxlength="6" placeholder="例: AB12CD" style="text-transform:uppercase;">
+      </div>
+      <button class="ghost" id="btn-join">この部屋に入る</button>
+      <div class="msg" id="entry-msg"></div>
     </div>
+    <p class="hint">ひらがな・カタカナで単語をつなげよう。「ん」で終わったら脱落、最後まで残った人の勝ち。</p>
+  </section>
 
-    <!-- ===== 挑戦タブ ===== -->
-    <div id="tabChallenge" class="tab-content active">
-      <div class="status-bar">
-        <span class="timer" id="timerDisplay">0.0</span>
-        <span class="status-msg" id="statusMessage">待機</span>
-      </div>
-      <div class="eq-panel">
-        <div class="eq-row"><span id="eq1a">?</span>x + <span id="eq1b">?</span>y = <span id="eq1c">?</span></div>
-        <div class="eq-row"><span id="eq2a">?</span>x + <span id="eq2b">?</span>y = <span id="eq2c">?</span></div>
-      </div>
-      <div class="input-area">
-        <div class="input-group"><label>x =</label><input type="number" id="inputX" step="any" value="0" /></div>
-        <div class="input-group"><label>y =</label><input type="number" id="inputY" step="any" value="0" /></div>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" id="newGameBtn">挑戦</button>
-        <button class="btn btn-warning" id="stopBtn">ストップ</button>
-        <button class="btn btn-success" id="checkBtn">解答</button>
-      </div>
-      <div class="sound-control">
-        <span>音</span>
-        <input type="range" id="volumeSlider" min="0" max="100" value="50" />
-        <span id="volumeLabel">50%</span>
-        <button class="btn" id="toggleSoundBtn" style="flex:0 1 auto; padding:4px 16px; min-width:60px; font-size:0.8rem;">オン</button>
-      </div>
-      <div class="toast" id="toastMessage">挑戦ボタンでスタート</div>
+  <!-- LOBBY SCREEN -->
+  <section id="screen-lobby" class="screen">
+    <div class="card">
+      <div class="room-code" id="lobby-code">------</div>
+      <div class="room-code-label">この部屋コードを友だちに共有してね</div>
+
+      <ul class="player-list" id="lobby-players"></ul>
+
+      <button class="primary" id="btn-start" disabled>ゲームを始める（2人以上で開始可）</button>
+      <div class="msg" id="lobby-msg"></div>
+      <button class="ghost" id="btn-leave-lobby" style="margin-top:10px;">部屋を出る</button>
     </div>
+  </section>
 
-    <!-- ===== 対戦タブ ===== -->
-    <div id="tabBattle" class="tab-content">
-      <!-- ステータス表示 -->
-      <div class="battle-status">
-        <div class="battle-score">
-          <span class="score-you">あなた: <span id="yourScore">0</span></span>
-          <span class="score-opponent">相手: <span id="opponentScore">0</span></span>
-        </div>
-        <div class="battle-round">ラウンド <span id="battleRound">0</span>/3</div>
-        <div class="battle-opponent" id="opponentNameDisplay">待機中</div>
+  <!-- GAME SCREEN -->
+  <section id="screen-game" class="screen">
+    <div class="card">
+      <div class="turn-banner" id="turn-banner">-</div>
+
+      <div class="chain-wrap" id="chain-wrap">
+        <div class="chain-empty">まだ言葉がつながっていません</div>
       </div>
 
-      <!-- ルーム操作エリア (常時表示) -->
-      <div class="battle-room-input">
-        <span style="color:#8aacbf;">ルームID:</span>
-        <input type="text" id="roomIdInput" placeholder="部屋番号" />
-        <button class="btn btn-secondary" id="battleJoinBtn">参加</button>
-        <button class="btn btn-primary" id="battleCreateBtn">作成</button>
-        <button class="btn btn-success" id="battleRandomBtn">ランダム</button>
-        <span class="battle-room-status" id="roomStatus">-</span>
+      <div class="input-row">
+        <input type="text" id="word-input" placeholder="ひらがな・カタカナで入力" autocomplete="off">
+        <button class="primary" id="btn-submit">送信</button>
       </div>
+      <div class="msg" id="game-msg"></div>
 
-      <!-- マッチング後の準備エリア (マッチング後に表示) -->
-      <div id="battleMatchArea" style="display:none;">
-        <div class="battle-waiting-area">
-          <button class="btn btn-primary" id="battleReadyBtn">準備OK</button>
-          <button class="btn btn-warning" id="battleExitBtn">退出</button>
-        </div>
-      </div>
-
-      <!-- 問題表示エリア (マッチング＆準備完了後に表示) -->
-      <div id="battleQuestionArea" style="display:none;">
-        <div class="eq-panel">
-          <div class="eq-row"><span id="bEq1a">?</span>x + <span id="bEq1b">?</span>y = <span id="bEq1c">?</span></div>
-          <div class="eq-row"><span id="bEq2a">?</span>x + <span id="bEq2b">?</span>y = <span id="bEq2c">?</span></div>
-        </div>
-        <div class="input-area">
-          <div class="input-group"><label>x =</label><input type="number" id="bInputX" step="any" value="0" /></div>
-          <div class="input-group"><label>y =</label><input type="number" id="bInputY" step="any" value="0" /></div>
-        </div>
-        <div class="battle-actions">
-          <button class="btn btn-success" id="battleAnswerBtn">解答</button>
-        </div>
-      </div>
-
-      <!-- 結果表示 -->
-      <div class="battle-result" id="battleResult" style="display:none;"></div>
-      <div class="toast" id="battleToast">対戦相手を待っています</div>
+      <ul class="player-list" id="game-players" style="margin-top:18px;"></ul>
     </div>
+  </section>
 
-    <!-- ===== ランキングタブ ===== -->
-    <div id="tabRanking" class="tab-content">
-      <div class="rank-section">
-        <div class="rank-header">
-          <span>ランキング</span>
-          <div class="rank-tabs" id="rankTabContainer">
-            <button class="rank-tab-btn active" data-digit="1">1桁</button>
-            <button class="rank-tab-btn" data-digit="2">2桁</button>
-            <button class="rank-tab-btn" data-digit="3">3桁</button>
-            <button class="rank-tab-btn" data-digit="4">4桁</button>
-            <button class="rank-tab-btn" data-digit="5">5桁</button>
-          </div>
-        </div>
-        <ul class="rank-list" id="rankingList"><li class="empty">読み込み中...</li></ul>
-        <div class="footer">Firebase · 一人1記録 · 桁別</div>
-      </div>
+  <!-- RESULT SCREEN -->
+  <section id="screen-result" class="screen">
+    <div class="card">
+      <div class="result-word" id="result-title">-</div>
+      <div class="result-sub" id="result-sub"></div>
+      <button class="primary" id="btn-restart">もう一度遊ぶ</button>
+      <button class="ghost" id="btn-leave-result" style="margin-top:10px;">部屋を出る</button>
     </div>
+  </section>
 
-    <!-- ===== 設定タブ ===== -->
-    <div id="tabSettings" class="tab-content">
-      <div class="settings">
-        <div class="setting-row">
-          <label>ユーザー名</label>
-          <input type="text" id="usernameInput" placeholder="名無し" maxlength="16" />
-          <button class="btn btn-primary" id="saveUsernameBtn" style="flex:0 1 auto; padding:6px 16px;">保存</button>
-          <span class="name-locked" id="nameLockStatus"></span>
-        </div>
-        <div class="setting-row">
-          <label>桁数</label>
-          <select id="digitSelect">
-            <option value="1">1桁</option><option value="2">2桁</option>
-            <option value="3" selected>3桁</option>
-            <option value="4">4桁</option><option value="5">5桁</option>
-          </select>
-          <span style="color:#8aacbf; font-size:0.85rem; margin-left:4px;">(1〜5桁)</span>
-        </div>
-        <div class="setting-row" style="justify-content:space-between; flex-wrap:wrap; gap:12px;">
-          <span style="color:#7b9eb3; font-size:0.8rem;">同じ名前は使用できません</span>
-          <span style="color:#7b9eb3; font-size:0.8rem;">一人1記録まで</span>
-        </div>
-        <div class="delete-section">
-          <button class="btn btn-danger" id="deleteAccountBtn" style="min-width:140px;">アカウント削除</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <p class="footer-note">Firebase Realtime Database でリアルタイム同期しています</p>
+</div>
 
-  <script>
-    (function() {
-      // ============================================================
-      //  Firebase 設定
-      // ============================================================
-      const firebaseConfig = {
-        apiKey: "AIzaSyAqe24qeS_gYtMA_gnF_lYNP70keCQcpnA",
-        authDomain: "renritu-56ae7.firebaseapp.com",
-        databaseURL: "https://renritu-56ae7-default-rtdb.firebaseio.com",
-        projectId: "renritu-56ae7",
-        storageBucket: "renritu-56ae7.firebasestorage.app",
-        messagingSenderId: "327969979771",
-        appId: "1:327969979771:web:709a0fc2a281dc495e91de",
-        measurementId: "G-VFLGB9QXR3"
-      };
+<!-- Firebase SDK (compat, script-tag style) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 
-      let db = null;
-      let rankingRef = null;
-      let battleRef = null;
-      try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        rankingRef = db.ref('ranking_v5');
-        battleRef = db.ref('battle_rooms');
-        console.log('Firebase 接続成功');
-      } catch (e) {
-        console.warn('Firebase 初期化エラー', e);
-      }
+<script>
+/* =========================================================
+   FIREBASE CONFIG
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDWxhILNkj0RrOV248Bh2zoFZfNq2G-3N0",
+  authDomain: "zoukin-kart.firebaseapp.com",
+  databaseURL: "https://zoukin-kart-default-rtdb.firebaseio.com",
+  projectId: "zoukin-kart",
+  storageBucket: "zoukin-kart.firebasestorage.app",
+  messagingSenderId: "627298939041",
+  appId: "1:627298939041:web:3dafaed8c6d267f1d780e0",
+  measurementId: "G-DDW4R9EXW5"
+};
 
-      // ============================================================
-      //  サウンド
-      // ============================================================
-      let audioCtx = null;
-      let soundEnabled = true;
-      let masterVolume = 0.5;
-      let bgmRunning = false;
-      let bgmPattern = [
-        { freq: 523.25, dur: 0.12 }, { freq: 587.33, dur: 0.10 },
-        { freq: 659.25, dur: 0.14 }, { freq: 523.25, dur: 0.10 },
-        { freq: 587.33, dur: 0.12 }, { freq: 659.25, dur: 0.16 }
-      ];
-      let bgmIndex = 0;
-      let bgmTimeout = null;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-      function initAudio() {
-        if (!audioCtx) {
-          try { audioCtx = new(window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-        }
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      }
+/* =========================================================
+   LOCAL PLAYER IDENTITY
+   ========================================================= */
+function getMyId(){
+  let id = sessionStorage.getItem('shiritori_uid');
+  if(!id){
+    id = 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+    sessionStorage.setItem('shiritori_uid', id);
+  }
+  return id;
+}
+const MY_ID = getMyId();
 
-      function playTone(freq, duration, type = 'sine', volume = 0.3) {
-        if (!soundEnabled || !audioCtx) return;
-        try {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = type;
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(volume * masterVolume, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + duration);
-        } catch (e) {}
-      }
+/* =========================================================
+   STATE
+   ========================================================= */
+let currentRoomId = null;
+let roomRef = null;
+let roomListener = null;
+let myName = '';
+let turnTimerInterval = null;
 
-      function playBgmNote() {
-        if (!soundEnabled || !bgmRunning) return;
-        try {
-          const note = bgmPattern[bgmIndex % bgmPattern.length];
-          playTone(note.freq, note.dur, 'sine', 0.12);
-          bgmIndex++;
-          bgmTimeout = setTimeout(playBgmNote, note.dur * 1000 + 80);
-        } catch (e) {}
-      }
+const TURN_SECONDS = 30;
 
-      function startBgm() { if (bgmRunning) return;
-        bgmRunning = true;
-        bgmIndex = 0;
-        if (bgmTimeout) clearTimeout(bgmTimeout);
-        playBgmNote(); }
+/* =========================================================
+   HELPERS: screens
+   ========================================================= */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
 
-      function stopBgm() { bgmRunning = false; if (bgmTimeout) { clearTimeout(bgmTimeout);
-          bgmTimeout = null; } }
+/* =========================================================
+   HELPERS: kana normalization for shiritori rules
+   ========================================================= */
+const SMALL_TO_NORMAL = {
+  'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お',
+  'ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ',
+  'ァ':'あ','ィ':'い','ゥ':'う','ェ':'え','ォ':'お',
+  'ャ':'や','ュ':'ゆ','ョ':'よ','ッ':'つ','ヮ':'わ'
+};
 
-      function playCorrectSound() {
-        setTimeout(() => playTone(523.25, 0.1, 'sine', 0.25), 0);
-        setTimeout(() => playTone(659.25, 0.1, 'sine', 0.25), 120);
-        setTimeout(() => playTone(783.99, 0.15, 'sine', 0.25), 240);
-      }
+function katakanaToHiragana(str){
+  return str.replace(/[\u30A1-\u30F6]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
+}
 
-      function playWrongSound() { playTone(220, 0.25, 'sawtooth', 0.15); }
+function isValidKanaWord(str){
+  // only hiragana / katakana / long vowel mark, length >= 1
+  return /^[\u3041-\u3096\u30A1-\u30F6\u30FC]+$/.test(str);
+}
 
-      function playStartSound() {
-        playTone(440, 0.08, 'sine', 0.2);
-        setTimeout(() => playTone(554.37, 0.08, 'sine', 0.2), 100);
-        setTimeout(() => playTone(659.25, 0.12, 'sine', 0.25), 200);
-      }
+function normalizeWord(str){
+  return katakanaToHiragana(str.trim());
+}
 
-      function playStopSound() {
-        playTone(523.25, 0.1, 'sine', 0.2);
-        setTimeout(() => playTone(440, 0.12, 'sine', 0.2), 120);
-        setTimeout(() => playTone(349.23, 0.15, 'sine', 0.2), 240);
-      }
+function getFirstChar(normalized){
+  let c = normalized[0];
+  if(SMALL_TO_NORMAL[c]) c = SMALL_TO_NORMAL[c];
+  return c;
+}
 
-      // ============================================================
-      //  DOM
-      // ============================================================
-      const timerDisplay = document.getElementById('timerDisplay');
-      const statusMsg = document.getElementById('statusMessage');
-      const eq1a = document.getElementById('eq1a');
-      const eq1b = document.getElementById('eq1b');
-      const eq1c = document.getElementById('eq1c');
-      const eq2a = document.getElementById('eq2a');
-      const eq2b = document.getElementById('eq2b');
-      const eq2c = document.getElementById('eq2c');
-      const inputX = document.getElementById('inputX');
-      const inputY = document.getElementById('inputY');
-      const checkBtn = document.getElementById('checkBtn');
-      const newGameBtn = document.getElementById('newGameBtn');
-      const stopBtn = document.getElementById('stopBtn');
-      const rankingList = document.getElementById('rankingList');
-      const toast = document.getElementById('toastMessage');
-      const usernameInput = document.getElementById('usernameInput');
-      const saveUsernameBtn = document.getElementById('saveUsernameBtn');
-      const digitSelect = document.getElementById('digitSelect');
-      const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-      const nameLockStatus = document.getElementById('nameLockStatus');
-      const rankTabContainer = document.getElementById('rankTabContainer');
-      const volumeSlider = document.getElementById('volumeSlider');
-      const volumeLabel = document.getElementById('volumeLabel');
-      const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+function getLastChar(normalized){
+  let s = normalized;
+  // strip trailing long-vowel marks, fall back to preceding vowel char (simplified)
+  let c = s[s.length - 1];
+  if(c === 'ー'){
+    // simplistic: just look at char before the mark
+    if(s.length > 1) c = s[s.length - 2];
+  }
+  if(SMALL_TO_NORMAL[c]) c = SMALL_TO_NORMAL[c];
+  return c;
+}
 
-      // 対戦DOM
-      const bEq1a = document.getElementById('bEq1a');
-      const bEq1b = document.getElementById('bEq1b');
-      const bEq1c = document.getElementById('bEq1c');
-      const bEq2a = document.getElementById('bEq2a');
-      const bEq2b = document.getElementById('bEq2b');
-      const bEq2c = document.getElementById('bEq2c');
-      const bInputX = document.getElementById('bInputX');
-      const bInputY = document.getElementById('bInputY');
-      const battleReadyBtn = document.getElementById('battleReadyBtn');
-      const battleAnswerBtn = document.getElementById('battleAnswerBtn');
-      const battleExitBtn = document.getElementById('battleExitBtn');
-      const battleJoinBtn = document.getElementById('battleJoinBtn');
-      const battleCreateBtn = document.getElementById('battleCreateBtn');
-      const battleRandomBtn = document.getElementById('battleRandomBtn');
-      const roomIdInput = document.getElementById('roomIdInput');
-      const roomStatus = document.getElementById('roomStatus');
-      const battleToast = document.getElementById('battleToast');
-      const yourScoreEl = document.getElementById('yourScore');
-      const opponentScoreEl = document.getElementById('opponentScore');
-      const battleRoundEl = document.getElementById('battleRound');
-      const opponentNameDisplay = document.getElementById('opponentNameDisplay');
-      const battleResult = document.getElementById('battleResult');
-      const battleMatchArea = document.getElementById('battleMatchArea');
-      const battleQuestionArea = document.getElementById('battleQuestionArea');
+function endsWithN(normalized){
+  let last = normalized[normalized.length - 1];
+  return last === 'ん' || last === 'ン' || last === 'ん';
+}
 
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      const tabContents = {
-        tabChallenge: document.getElementById('tabChallenge'),
-        tabBattle: document.getElementById('tabBattle'),
-        tabRanking: document.getElementById('tabRanking'),
-        tabSettings: document.getElementById('tabSettings')
-      };
+/* =========================================================
+   ROOM CODE
+   ========================================================= */
+function generateRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
 
-      function switchTab(tabId) {
-        tabBtns.forEach(btn => btn.classList.remove('active'));
-        const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-        if (targetBtn) targetBtn.classList.add('active');
-        Object.keys(tabContents).forEach(key => {
-          tabContents[key].classList.remove('active');
-        });
-        if (tabContents[tabId]) {
-          tabContents[tabId].classList.add('active');
-        }
-      }
+/* =========================================================
+   CREATE / JOIN
+   ========================================================= */
+document.getElementById('btn-create').addEventListener('click', async () => {
+  const name = document.getElementById('name-input').value.trim();
+  const msg = document.getElementById('entry-msg');
+  if(!name){ msg.textContent = '名前を入力してください'; return; }
+  msg.textContent = '';
+  myName = name;
 
-      tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-          const tabId = this.dataset.tab;
-          if (tabId) switchTab(tabId);
-        });
+  let code = generateRoomCode();
+  const roomData = {
+    hostId: MY_ID,
+    status: 'waiting',
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    turnIndex: 0,
+    turnStartedAt: 0,
+    lastChar: '',
+    words: {},
+    players: {
+      [MY_ID]: { name: myName, order: 0, alive: true, joinedAt: firebase.database.ServerValue.TIMESTAMP }
+    }
+  };
+  try{
+    await db.ref('shiritoriRooms/' + code).set(roomData);
+    enterRoom(code);
+  }catch(e){
+    msg.textContent = '部屋の作成に失敗しました: ' + e.message;
+  }
+});
+
+document.getElementById('btn-join').addEventListener('click', async () => {
+  const name = document.getElementById('name-input').value.trim();
+  const code = document.getElementById('join-input').value.trim().toUpperCase();
+  const msg = document.getElementById('entry-msg');
+  if(!name){ msg.textContent = '名前を入力してください'; return; }
+  if(!code){ msg.textContent = '部屋コードを入力してください'; return; }
+  msg.textContent = '';
+  myName = name;
+
+  try{
+    const snap = await db.ref('shiritoriRooms/' + code).get();
+    if(!snap.exists()){ msg.textContent = 'その部屋コードは見つかりませんでした'; return; }
+    const room = snap.val();
+
+    if(!room.players || !room.players[MY_ID]){
+      const order = room.players ? Object.keys(room.players).length : 0;
+      await db.ref(`shiritoriRooms/${code}/players/${MY_ID}`).set({
+        name: myName, order, alive: true, joinedAt: firebase.database.ServerValue.TIMESTAMP
       });
+    }
+    enterRoom(code);
+  }catch(e){
+    msg.textContent = '参加に失敗しました: ' + e.message;
+  }
+});
 
-      // ============================================================
-      //  Cookie
-      // ============================================================
-      function setCookie(n, v, d = 365) { const e = new Date();
-        e.setTime(e.getTime() + d * 24 * 60 * 60 * 1000);
-        document.cookie = `${n}=${encodeURIComponent(v)}; expires=${e.toUTCString()}; path=/; SameSite=Lax`; }
+/* =========================================================
+   ENTER ROOM / LISTENER
+   ========================================================= */
+function enterRoom(code){
+  currentRoomId = code;
+  if(roomRef && roomListener) roomRef.off('value', roomListener);
+  roomRef = db.ref('shiritoriRooms/' + code);
+  roomListener = roomRef.on('value', snap => {
+    const room = snap.val();
+    if(!room){ return; }
+    renderRoom(room);
+  });
+}
 
-      function getCookie(n) { const m = document.cookie.match(new RegExp('(^| )' + n + '=([^;]+)'));
-        return m ? decodeURIComponent(m[2]) : null; }
+function leaveRoomUI(){
+  if(roomRef && roomListener){ roomRef.off('value', roomListener); }
+  roomRef = null; roomListener = null; currentRoomId = null;
+  clearInterval(turnTimerInterval);
+  showScreen('screen-entry');
+}
+document.getElementById('btn-leave-lobby').addEventListener('click', leaveRoomUI);
+document.getElementById('btn-leave-result').addEventListener('click', leaveRoomUI);
 
-      function deleteCookie(n) { document.cookie = `${n}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`; }
+/* =========================================================
+   RENDER
+   ========================================================= */
+function renderRoom(room){
+  if(room.status === 'waiting'){
+    renderLobby(room);
+    showScreen('screen-lobby');
+  } else if(room.status === 'playing'){
+    renderGame(room);
+    showScreen('screen-game');
+  } else if(room.status === 'finished'){
+    renderResult(room);
+    clearInterval(turnTimerInterval);
+    showScreen('screen-result');
+  }
+}
 
-      // ============================================================
-      //  状態
-      // ============================================================
-      let currentEq = { a1: 0, b1: 0, c1: 0, a2: 0, b2: 0, c2: 0 };
-      let timerInterval = null;
-      let startTime = null;
-      let elapsedSeconds = 0;
-      let isGameActive = false;
-      let isSolved = false;
-      let allRankingData = [];
-      let currentUsername = '';
-      let isNameLocked = false;
-      let selectedDigit = 3;
+function playersSorted(room){
+  const players = room.players || {};
+  return Object.keys(players)
+    .map(id => ({ id, ...players[id] }))
+    .sort((a,b) => a.order - b.order);
+}
 
-      let battleRoomId = null;
-      let battleListener = null;
-      let battlePlayerId = null;
-      let battleYourScore = 0;
-      let battleOppScore = 0;
-      let battleRound = 0;
-      let battleMaxRound = 3;
-      let battleIsReady = false;
-      let battleIsPlaying = false;
-      let battleIsFinished = false;
-      let battleOpponentName = '';
-      let battleMySolved = false;
-      let battleOppSolved = false;
-      let battleWaitingForMatch = false;
-      let battleIsMatched = false;
+function renderLobby(room){
+  document.getElementById('lobby-code').textContent = currentRoomId;
+  const list = document.getElementById('lobby-players');
+  list.innerHTML = '';
+  const players = playersSorted(room);
+  players.forEach(p => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${escapeHtml(p.name)}${p.id===MY_ID ? '（あなた）' : ''}</span>`;
+    if(p.id === room.hostId){
+      const b = document.createElement('span');
+      b.className = 'badge host';
+      b.textContent = 'ホスト';
+      li.appendChild(b);
+    }
+    list.appendChild(li);
+  });
 
-      // ============================================================
-      //  設定
-      // ============================================================
-      function getDigit() { return parseInt(digitSelect.value, 10); }
+  const startBtn = document.getElementById('btn-start');
+  const isHost = room.hostId === MY_ID;
+  startBtn.style.display = isHost ? 'block' : 'none';
+  startBtn.disabled = players.length < 2;
+  document.getElementById('lobby-msg').textContent = isHost
+    ? (players.length < 2 ? 'あと1人以上参加すると開始できます' : '')
+    : 'ホストの開始を待っています…';
+}
 
-      function getUsername() { return usernameInput.value.trim() || '名無し'; }
+document.getElementById('btn-start').addEventListener('click', async () => {
+  const snap = await roomRef.get();
+  const room = snap.val();
+  const players = playersSorted(room);
+  if(players.length < 2) return;
+  await roomRef.update({
+    status: 'playing',
+    turnIndex: 0,
+    turnStartedAt: firebase.database.ServerValue.TIMESTAMP,
+    lastChar: '',
+    words: {},
+    loserId: null,
+    winnerId: null
+  });
+  // ensure everyone marked alive at game start
+  const updates = {};
+  players.forEach(p => { updates[`players/${p.id}/alive`] = true; });
+  await roomRef.update(updates);
+});
 
-      function updateNameLockStatus() {
-        if (isNameLocked) {
-          usernameInput.disabled = true;
-          saveUsernameBtn.disabled = true;
-          nameLockStatus.textContent = '変更できません';
-          nameLockStatus.style.color = '#f5a3a3';
-        } else {
-          usernameInput.disabled = false;
-          saveUsernameBtn.disabled = false;
-          nameLockStatus.textContent = '';
-        }
+function wordsAsArray(room){
+  const w = room.words || {};
+  return Object.keys(w).map(k => ({ id:k, ...w[k] })).sort((a,b) => a.seq - b.seq);
+}
+
+function renderGame(room){
+  const players = playersSorted(room);
+  const alivePlayers = players.filter(p => p.alive !== false);
+  const turnPlayer = alivePlayers[room.turnIndex % alivePlayers.length];
+
+  // chain
+  const wrap = document.getElementById('chain-wrap');
+  const words = wordsAsArray(room);
+  if(words.length === 0){
+    wrap.innerHTML = '<div class="chain-empty">さいしょの言葉を入力してスタート！</div>';
+  } else {
+    wrap.innerHTML = '';
+    words.forEach((w, idx) => {
+      if(idx > 0){
+        const arrow = document.createElement('span');
+        arrow.className = 'link-arrow';
+        arrow.textContent = '→';
+        wrap.appendChild(arrow);
       }
+      const pill = document.createElement('span');
+      pill.className = 'word-pill';
+      pill.innerHTML = `${escapeHtml(w.word)}<span class="by">${escapeHtml(w.byName || '')}</span>`;
+      wrap.appendChild(pill);
+    });
+    wrap.scrollTop = wrap.scrollHeight;
+  }
 
-      // ============================================================
-      //  問題生成
-      // ============================================================
-      function generateEquation() {
-        const digit = getDigit();
-        const maxVal = Math.pow(10, digit) - 1;
-        const minVal = digit === 1 ? -9 : -(maxVal);
-        let x, y, a1, b1, c1, a2, b2, c2, attempts = 0;
-        do {
-          x = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          y = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          a1 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          b1 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          a2 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          b2 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          c1 = a1 * x + b1 * y;
-          c2 = a2 * x + b2 * y;
-          attempts++;
-        } while ((a1 === 0 && b1 === 0) || (a2 === 0 && b2 === 0) ||
-          (a1 === a2 && b1 === b2 && c1 === c2) || attempts < 20 ||
-          Math.abs(c1) > 1000000 || Math.abs(c2) > 1000000);
-        return { a1, b1, c1, a2, b2, c2, solutionX: x, solutionY: y };
-      }
+  // turn banner + timer
+  const banner = document.getElementById('turn-banner');
+  const isMyTurn = turnPlayer && turnPlayer.id === MY_ID;
+  banner.className = 'turn-banner' + (isMyTurn ? ' mine' : '');
+  updateTurnBanner(room, turnPlayer, isMyTurn);
+  clearInterval(turnTimerInterval);
+  turnTimerInterval = setInterval(() => updateTurnBanner(room, turnPlayer, isMyTurn), 1000);
 
-      function displayEquation(eq, isBattle = false) {
-        const t = isBattle ?
-          { a1: bEq1a, b1: bEq1b, c1: bEq1c, a2: bEq2a, b2: bEq2b, c2: bEq2c } :
-          { a1: eq1a, b1: eq1b, c1: eq1c, a2: eq2a, b2: eq2b, c2: eq2c };
-        t.a1.textContent = eq.a1;
-        t.b1.textContent = eq.b1;
-        t.c1.textContent = eq.c1;
-        t.a2.textContent = eq.a2;
-        t.b2.textContent = eq.b2;
-        t.c2.textContent = eq.c2;
-      }
+  // input enable state
+  const input = document.getElementById('word-input');
+  const btn = document.getElementById('btn-submit');
+  input.disabled = !isMyTurn;
+  btn.disabled = !isMyTurn;
+  input.placeholder = isMyTurn
+    ? (room.lastChar ? `「${room.lastChar}」から始まる言葉` : 'さいしょの言葉を入力')
+    : `${turnPlayer ? turnPlayer.name : ''}さんの番です`;
 
-      // ============================================================
-      //  タイマー
-      // ============================================================
-      function startTimer() {
-        if (timerInterval) clearInterval(timerInterval);
-        startTime = Date.now() - elapsedSeconds * 1000;
-        timerInterval = setInterval(() => {
-          elapsedSeconds = (Date.now() - startTime) / 1000;
-          timerDisplay.textContent = elapsedSeconds.toFixed(1);
-        }, 100);
-      }
+  // players list
+  const list = document.getElementById('game-players');
+  list.innerHTML = '';
+  players.forEach(p => {
+    const li = document.createElement('li');
+    const dead = p.alive === false;
+    li.className = (turnPlayer && p.id === turnPlayer.id && !dead ? 'turn ' : '') + (dead ? 'dead' : '');
+    li.innerHTML = `<span>${escapeHtml(p.name)}${p.id===MY_ID ? '（あなた）' : ''}</span>`;
+    if(dead){
+      const b = document.createElement('span'); b.className='badge'; b.style.background='var(--vermillion)'; b.textContent='脱落';
+      li.appendChild(b);
+    } else if(turnPlayer && p.id === turnPlayer.id){
+      const b = document.createElement('span'); b.className='badge turn'; b.textContent='番';
+      li.appendChild(b);
+    }
+    list.appendChild(li);
+  });
+}
 
-      function stopTimer() { if (timerInterval) { clearInterval(timerInterval);
-          timerInterval = null; } }
+function updateTurnBanner(room, turnPlayer, isMyTurn){
+  const banner = document.getElementById('turn-banner');
+  if(!turnPlayer){ banner.textContent = '進行中…'; return; }
+  const started = room.turnStartedAt || Date.now();
+  const remain = Math.max(0, TURN_SECONDS - Math.floor((Date.now() - started)/1000));
+  const who = isMyTurn ? 'あなたの番です' : `${turnPlayer.name} さんの番`;
+  banner.innerHTML = `${escapeHtml(who)}　<span class="timer">残り${remain}秒</span>`;
 
-      function resetTimer() { stopTimer();
-        elapsedSeconds = 0;
-        timerDisplay.textContent = '0.0'; }
+  // if I'm the turn player and time's up, auto-eliminate (any client can also do this safely-ish)
+  if(remain <= 0 && turnPlayer.id === MY_ID){
+    handleTimeout();
+  }
+}
 
-      // ============================================================
-      //  挑戦モード
-      // ============================================================
-      function resetGame() {
-        stopTimer();
-        resetTimer();
-        isGameActive = false;
-        isSolved = false;
-        checkBtn.disabled = true;
-        statusMsg.textContent = '停止';
-        statusMsg.style.color = '#f5a3a3';
-        eq1a.textContent = '?';
-        eq1b.textContent = '?';
-        eq1c.textContent = '?';
-        eq2a.textContent = '?';
-        eq2b.textContent = '?';
-        eq2c.textContent = '?';
-        inputX.value = 0;
-        inputY.value = 0;
-        toastMessage('ストップしました');
-        playStopSound();
-        stopBgm();
-      }
+function renderResult(room){
+  const players = playersSorted(room);
+  const winner = players.find(p => p.id === room.winnerId);
+  const title = document.getElementById('result-title');
+  const sub = document.getElementById('result-sub');
+  if(winner){
+    title.textContent = `🏆 ${winner.name} さんの勝ち！`;
+  } else {
+    title.textContent = 'ゲーム終了';
+  }
+  const loser = players.find(p => p.id === room.loserId);
+  sub.textContent = loser ? `${loser.name} さんが「ん」で終わる言葉を使って脱落しました` : '';
 
-      function newGame() {
-        if (!isNameLocked) { toastMessage('先に設定タブで名前を保存してください'); return; }
-        stopTimer();
-        resetTimer();
-        const eq = generateEquation();
-        currentEq = eq;
-        displayEquation(eq, false);
-        inputX.value = 0;
-        inputY.value = 0;
-        isSolved = false;
-        isGameActive = true;
-        statusMsg.textContent = '解答中';
-        statusMsg.style.color = '#b3d9f0';
-        checkBtn.disabled = false;
-        toastMessage('スタート！');
-        startTimer();
-        playStartSound();
-        startBgm();
-      }
+  const isHost = room.hostId === MY_ID;
+  document.getElementById('btn-restart').style.display = isHost ? 'block' : 'none';
+}
 
-      function checkAnswer() {
-        if (!isGameActive || isSolved) { toastMessage('問題がありません'); return; }
-        const x = parseFloat(inputX.value);
-        const y = parseFloat(inputY.value);
-        if (isNaN(x) || isNaN(y)) { toastMessage('数値を入力'); return; }
-        const eps = 0.001;
-        const eq = currentEq;
-        const ok1 = Math.abs(eq.a1 * x + eq.b1 * y - eq.c1) < eps;
-        const ok2 = Math.abs(eq.a2 * x + eq.b2 * y - eq.c2) < eps;
-        if (ok1 && ok2) {
-          isSolved = true;
-          isGameActive = false;
-          stopTimer();
-          stopBgm();
-          const finalTime = parseFloat(timerDisplay.textContent);
-          statusMsg.textContent = `正解！ ${finalTime.toFixed(1)}s`;
-          statusMsg.style.color = '#8bdaa0';
-          checkBtn.disabled = true;
-          toastMessage(`正解！ ${finalTime.toFixed(1)}秒`);
-          playCorrectSound();
-          const name = getUsername();
-          const digit = getDigit();
-          const existing = allRankingData.find(r => r.username === name);
-          if (existing) { toastMessage(`「${name}」は既に使用されています`); return; }
-          const entry = { username: name, time: Math.round(finalTime * 10) / 10, digit: digit, timestamp: Date.now() };
-          saveRanking(entry);
-        } else {
-          toastMessage('不正解');
-          statusMsg.textContent = '不正解';
-          statusMsg.style.color = '#f5a3a3';
-          playWrongSound();
-        }
-      }
+document.getElementById('btn-restart').addEventListener('click', async () => {
+  const snap = await roomRef.get();
+  const room = snap.val();
+  const players = playersSorted(room);
+  const updates = {
+    status: 'waiting',
+    turnIndex: 0,
+    turnStartedAt: 0,
+    lastChar: '',
+    words: {},
+    loserId: null,
+    winnerId: null
+  };
+  players.forEach(p => { updates[`players/${p.id}/alive`] = true; });
+  await roomRef.update(updates);
+});
 
-      // ============================================================
-      //  ランキング
-      // ============================================================
-      function saveRanking(entry) {
-        if (rankingRef) { rankingRef.push(entry).catch(() => saveLocal(entry)); } else { saveLocal(entry); }
-        allRankingData.push(entry);
-        renderRanking();
-      }
+/* =========================================================
+   SUBMIT WORD
+   ========================================================= */
+document.getElementById('btn-submit').addEventListener('click', submitWord);
+document.getElementById('word-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter') submitWord();
+});
 
-      function saveLocal(entry) { allRankingData.push(entry);
-        localStorage.setItem('rank_v5_all', JSON.stringify(allRankingData));
-        renderRanking(); }
+async function submitWord(){
+  const input = document.getElementById('word-input');
+  const msg = document.getElementById('game-msg');
+  const raw = input.value;
+  msg.textContent = '';
+  if(!raw || !raw.trim()){ return; }
 
-      function loadRanking() {
-        if (rankingRef) {
-          rankingRef.on('value', (snap) => {
-            const data = snap.val();
-            allRankingData = data ? Object.values(data) : [];
-            renderRanking();
-          }, () => loadLocal());
-        } else { loadLocal(); }
-      }
+  const snap = await roomRef.get();
+  const room = snap.val();
+  if(!room || room.status !== 'playing') return;
 
-      function loadLocal() {
-        try {
-          const stored = localStorage.getItem('rank_v5_all');
-          allRankingData = stored ? JSON.parse(stored) : [];
-        } catch (e) { allRankingData = []; }
-        renderRanking();
-      }
+  const players = playersSorted(room);
+  const alivePlayers = players.filter(p => p.alive !== false);
+  const turnPlayer = alivePlayers[room.turnIndex % alivePlayers.length];
+  if(!turnPlayer || turnPlayer.id !== MY_ID){
+    msg.textContent = 'あなたの番ではありません';
+    return;
+  }
 
-      function renderRanking() {
-        const filtered = allRankingData.filter(item => item.digit === selectedDigit);
-        filtered.sort((a, b) => a.time - b.time);
-        const top3 = filtered.slice(0, 3);
-        rankingList.innerHTML = '';
-        if (!top3 || top3.length === 0) {
-          rankingList.innerHTML = `<li class="empty">${selectedDigit}桁の記録はまだありません</li>`;
-          return;
-        }
-        top3.forEach((item, i) => {
-          const li = document.createElement('li');
-          const medal = i === 0 ? '1' : i === 1 ? '2' : '3';
-          li.innerHTML =
-            `<span><span class="rank">${medal}</span> ${item.username}</span><span class="time">${item.time}s</span>`;
-          rankingList.appendChild(li);
-        });
-      }
+  const normalized = normalizeWord(raw);
+  if(!isValidKanaWord(normalized)){
+    msg.textContent = 'ひらがな・カタカナのみで入力してください';
+    return;
+  }
 
-      // ============================================================
-      //  対戦モード
-      // ============================================================
-      function battleToastMsg(msg) {
-        battleToast.textContent = msg;
-        setTimeout(() => {
-          if (battleToast.textContent === msg) battleToast.textContent = '対戦相手を待っています';
-        }, 3000);
-      }
+  const words = wordsAsArray(room);
+  const usedSet = new Set(words.map(w => w.normalized));
+  if(usedSet.has(normalized)){
+    msg.textContent = 'その言葉はすでに使われています';
+    return;
+  }
 
-      function generateBattleEquation() {
-        const digit = getDigit();
-        const maxVal = Math.pow(10, digit) - 1;
-        const minVal = digit === 1 ? -9 : -(maxVal);
-        let x, y, a1, b1, c1, a2, b2, c2, attempts = 0;
-        do {
-          x = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          y = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          a1 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          b1 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          a2 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          b2 = Math.floor(Math.random() * (maxVal * 2 + 1)) + minVal;
-          c1 = a1 * x + b1 * y;
-          c2 = a2 * x + b2 * y;
-          attempts++;
-        } while ((a1 === 0 && b1 === 0) || (a2 === 0 && b2 === 0) ||
-          (a1 === a2 && b1 === b2 && c1 === c2) || attempts < 20 ||
-          Math.abs(c1) > 1000000 || Math.abs(c2) > 1000000);
-        return { a1, b1, c1, a2, b2, c2, solutionX: x, solutionY: y };
-      }
+  if(room.lastChar){
+    const first = getFirstChar(normalized);
+    if(first !== room.lastChar){
+      msg.textContent = `「${room.lastChar}」から始まる言葉を入力してください`;
+      return;
+    }
+  }
 
-      function setBattleEquation(eq) {
-        bEq1a.textContent = eq.a1;
-        bEq1b.textContent = eq.b1;
-        bEq1c.textContent = eq.c1;
-        bEq2a.textContent = eq.a2;
-        bEq2b.textContent = eq.b2;
-        bEq2c.textContent = eq.c2;
-        bInputX.value = 0;
-        bInputY.value = 0;
-        battleMySolved = false;
-        battleOppSolved = false;
-        battleResult.style.display = 'none';
-        battleResult.textContent = '';
-      }
+  const seq = words.length;
+  const wordId = 'w' + seq + '_' + Date.now().toString(36);
+  const wentN = endsWithN(normalized);
 
-      function updateBattleUI() {
-        yourScoreEl.textContent = battleYourScore;
-        opponentScoreEl.textContent = battleOppScore;
-        battleRoundEl.textContent = battleRound;
-        if (battleOpponentName) opponentNameDisplay.textContent = battleOpponentName;
-        battleReadyBtn.textContent = battleIsReady ? '準備完了' : '準備OK';
-        battleReadyBtn.disabled = battleIsReady || battleIsPlaying || battleIsFinished;
-      }
+  const updates = {};
+  updates[`words/${wordId}`] = {
+    word: raw.trim(),
+    normalized,
+    byId: MY_ID,
+    byName: turnPlayer.name,
+    seq
+  };
 
-      function showBattleResult(msg) {
-        battleResult.style.display = 'block';
-        battleResult.textContent = msg;
-      }
+  if(wentN){
+    // this player is eliminated
+    updates[`players/${MY_ID}/alive`] = false;
+    const remaining = alivePlayers.filter(p => p.id !== MY_ID);
+    if(remaining.length <= 1){
+      updates['status'] = 'finished';
+      updates['loserId'] = MY_ID;
+      updates['winnerId'] = remaining.length === 1 ? remaining[0].id : null;
+    } else {
+      // move to next alive player (indexes shift once this player is excluded)
+      updates['turnIndex'] = room.turnIndex % remaining.length;
+      updates['turnStartedAt'] = firebase.database.ServerValue.TIMESTAMP;
+      updates['lastChar'] = getLastChar(normalized);
+    }
+  } else {
+    const nextAliveCount = alivePlayers.length;
+    updates['turnIndex'] = (room.turnIndex + 1) % nextAliveCount;
+    updates['turnStartedAt'] = firebase.database.ServerValue.TIMESTAMP;
+    updates['lastChar'] = getLastChar(normalized);
+  }
 
-      // 対戦エリアの表示切替
-      function updateBattleAreas() {
-        if (battleIsMatched && battleRoomId) {
-          battleMatchArea.style.display = 'block';
-          // 準備が完了してラウンドが始まったら問題表示
-          if (battleIsPlaying || battleIsFinished) {
-            battleQuestionArea.style.display = 'block';
-          } else {
-            battleQuestionArea.style.display = 'none';
-          }
-        } else {
-          battleMatchArea.style.display = 'none';
-          battleQuestionArea.style.display = 'none';
-        }
-      }
+  await roomRef.update(updates);
+  input.value = '';
+}
 
-      // ルーム作成 (エラーハンドリング強化)
-      function createBattleRoom() {
-        if (!isNameLocked) { battleToastMsg('先に名前を設定してください'); return; }
-        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        roomIdInput.value = roomId;
-        const username = getUsername();
-        battlePlayerId = username;
-        const roomData = {
-          players: { [username]: { ready: false, score: 0, solved: false } },
-          round: 0,
-          maxRound: 3,
-          status: 'waiting',
-          equation: null,
-          creator: username,
-          timestamp: Date.now()
-        };
-        if (battleRef) {
-          battleRef.child(roomId).set(roomData)
-            .then(() => {
-              battleRoomId = roomId;
-              roomStatus.textContent = `作成: ${roomId}`;
-              battleToastMsg('ルームを作成しました。相手の参加を待っています');
-              battleIsMatched = false;
-              updateBattleAreas();
-              listenBattleRoom(roomId);
-            })
-            .catch((err) => {
-              console.error('作成エラー:', err);
-              battleToastMsg('ルーム作成に失敗しました (エラー: ' + err.message + ')');
-            });
-        } else {
-          battleToastMsg('Firebaseに接続されていません');
-        }
-      }
+async function handleTimeout(){
+  const snap = await roomRef.get();
+  const room = snap.val();
+  if(!room || room.status !== 'playing') return;
+  const players = playersSorted(room);
+  const alivePlayers = players.filter(p => p.alive !== false);
+  const turnPlayer = alivePlayers[room.turnIndex % alivePlayers.length];
+  if(!turnPlayer || turnPlayer.id !== MY_ID) return;
 
-      // ルーム参加
-      function joinBattleRoom() {
-        if (!isNameLocked) { battleToastMsg('先に名前を設定してください'); return; }
-        const roomId = roomIdInput.value.trim().toUpperCase();
-        if (!roomId) { battleToastMsg('ルームIDを入力してください'); return; }
-        const username = getUsername();
-        battlePlayerId = username;
-        if (battleRef) {
-          battleRef.child(roomId).once('value')
-            .then((snap) => {
-              const data = snap.val();
-              if (!data) { battleToastMsg('ルームが見つかりません'); return; }
-              if (data.players && data.players[username]) { battleToastMsg('この名前は既にルームにいます'); return; }
-              if (data.status === 'playing' || data.status === 'finished') {
-                battleToastMsg('このルームは既に進行中です');
-                return;
-              }
-              const updates = {};
-              updates[`players/${username}`] = { ready: false, score: 0, solved: false };
-              return battleRef.child(roomId).update(updates);
-            })
-            .then(() => {
-              battleRoomId = roomId;
-              roomStatus.textContent = `参加: ${roomId}`;
-              battleToastMsg('ルームに参加しました');
-              battleIsMatched = false;
-              updateBattleAreas();
-              listenBattleRoom(roomId);
-            })
-            .catch((err) => {
-              console.error('参加エラー:', err);
-              battleToastMsg('参加に失敗しました (エラー: ' + err.message + ')');
-            });
-        } else {
-          battleToastMsg('Firebaseに接続されていません');
-        }
-      }
+  // double-check time really elapsed to avoid race
+  const started = room.turnStartedAt || Date.now();
+  if(Date.now() - started < TURN_SECONDS * 1000) return;
 
-      // ランダムマッチング (エラーハンドリング強化)
-      function randomMatch() {
-        if (!isNameLocked) { battleToastMsg('先に名前を設定してください'); return; }
-        if (battleWaitingForMatch) return;
-        battleWaitingForMatch = true;
-        battleToastMsg('マッチング中...');
-        const username = getUsername();
+  const updates = {};
+  updates[`players/${MY_ID}/alive`] = false;
+  const remaining = alivePlayers.filter(p => p.id !== MY_ID);
+  if(remaining.length <= 1){
+    updates['status'] = 'finished';
+    updates['loserId'] = MY_ID;
+    updates['winnerId'] = remaining.length === 1 ? remaining[0].id : null;
+  } else {
+    updates['turnIndex'] = room.turnIndex % remaining.length;
+    updates['turnStartedAt'] = firebase.database.ServerValue.TIMESTAMP;
+  }
+  await roomRef.update(updates);
+}
 
-        battleRef.orderByChild('status').equalTo('waiting').limitToFirst(1).once('value')
-          .then((snap) => {
-            const data = snap.val();
-            let found = false;
-            if (data) {
-              const keys = Object.keys(data);
-              for (let key of keys) {
-                const room = data[key];
-                const players = room.players || {};
-                const usernames = Object.keys(players);
-                if (!players[username] && usernames.length < 2) {
-                  const updates = {};
-                  updates[`players/${username}`] = { ready: false, score: 0, solved: false };
-                  return battleRef.child(key).update(updates)
-                    .then(() => {
-                      battleRoomId = key;
-                      roomIdInput.value = key;
-                      roomStatus.textContent = `参加: ${key}`;
-                      battleToastMsg('マッチング成功！');
-                      battleWaitingForMatch = false;
-                      battleIsMatched = false;
-                      updateBattleAreas();
-                      listenBattleRoom(key);
-                      found = true;
-                    });
-                }
-              }
-            }
-            // 見つからなかったら新規作成
-            if (!found) {
-              const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-              roomIdInput.value = newRoomId;
-              const roomData = {
-                players: { [username]: { ready: false, score: 0, solved: false } },
-                round: 0,
-                maxRound: 3,
-                status: 'waiting',
-                equation: null,
-                creator: username,
-                timestamp: Date.now()
-              };
-              return battleRef.child(newRoomId).set(roomData)
-                .then(() => {
-                  battleRoomId = newRoomId;
-                  roomStatus.textContent = `作成: ${newRoomId}`;
-                  battleToastMsg('ルームを作成しました。相手を待っています');
-                  battleWaitingForMatch = false;
-                  battleIsMatched = false;
-                  updateBattleAreas();
-                  listenBattleRoom(newRoomId);
-                });
-            }
-          })
-          .catch((err) => {
-            console.error('マッチングエラー:', err);
-            battleToastMsg('マッチングエラー: ' + err.message);
-            battleWaitingForMatch = false;
-          });
-      }
-
-      function listenBattleRoom(roomId) {
-        if (battleListener) battleListener.off();
-        battleListener = battleRef.child(roomId);
-        battleListener.on('value', (snap) => {
-          const data = snap.val();
-          if (!data) {
-            battleToastMsg('ルームが削除されました');
-            exitBattleRoom();
-            return;
-          }
-          const players = data.players || {};
-          const usernames = Object.keys(players);
-          const username = getUsername();
-
-          const opp = usernames.find(n => n !== username);
-          if (opp) {
-            battleOpponentName = opp;
-            opponentNameDisplay.textContent = opp;
-            // マッチング成立
-            if (!battleIsMatched && usernames.length === 2) {
-              battleIsMatched = true;
-              updateBattleAreas();
-              battleToastMsg('マッチング完了！ 準備OKを押してください');
-            }
-          } else {
-            battleOpponentName = '';
-            opponentNameDisplay.textContent = '待機中';
-            battleIsMatched = false;
-            updateBattleAreas();
-          }
-
-          if (players[username]) battleYourScore = players[username].score || 0;
-          if (opp && players[opp]) battleOppScore = players[opp].score || 0;
-
-          battleRound = data.round || 0;
-          updateBattleUI();
-
-          if (data.equation) {
-            setBattleEquation(data.equation);
-            battleIsPlaying = true;
-            battleReadyBtn.disabled = true;
-            battleQuestionArea.style.display = 'block';
-          } else {
-            battleIsPlaying = false;
-            battleReadyBtn.disabled = false;
-            if (battleIsMatched) {
-              battleQuestionArea.style.display = 'none';
-            }
-          }
-
-          // 準備状態の確認
-          if (data.status === 'waiting') {
-            const allReady = usernames.every(n => players[n] && players[n].ready === true);
-            const allExist = usernames.length === 2;
-            if (allExist && allReady && data.round < data.maxRound) {
-              const eq = generateBattleEquation();
-              battleRef.child(roomId).update({
-                equation: eq,
-                status: 'playing',
-                round: data.round + 1
-              }).then(() => {
-                const resetUpdates = {};
-                usernames.forEach(n => { resetUpdates[`players/${n}/solved`] = false; });
-                battleRef.child(roomId).update(resetUpdates);
-                battleToastMsg(`ラウンド ${data.round + 1} スタート！`);
-                playStartSound();
-              });
-            }
-          }
-
-          // 勝敗判定
-          if (data.status === 'finished' || data.round >= data.maxRound) {
-            battleIsFinished = true;
-            let winner = '';
-            let maxScore = -1;
-            usernames.forEach(n => {
-              const s = players[n]?.score || 0;
-              if (s > maxScore) { maxScore = s;
-                winner = n; }
-            });
-            if (winner) {
-              const isYou = winner === username;
-              showBattleResult(`${isYou ? 'あなた' : winner} の勝利！ (${maxScore}点)`);
-              battleToastMsg(`対戦終了！ ${winner} の勝利！`);
-              battleReadyBtn.disabled = true;
-              battleAnswerBtn.disabled = true;
-            }
-          }
-
-          // 相手が先に解いたら通知
-          if (opp && players[opp] && players[opp].solved === true && !players[username]?.solved) {
-            if (battleIsPlaying && !battleIsFinished && !battleOppSolved) {
-              battleOppSolved = true;
-              battleToastMsg(`相手が先に解きました！`);
-              playWrongSound();
-            }
-          }
-          if (players[username] && players[username].solved === true) {
-            battleMySolved = true;
-          }
-
-          // 更新
-          updateBattleAreas();
-        });
-      }
-
-      function setBattleReady() {
-        if (!battleRoomId) { battleToastMsg('ルームに参加してください'); return; }
-        if (battleIsReady || battleIsPlaying || battleIsFinished) return;
-        const username = getUsername();
-        battleRef.child(`${battleRoomId}/players/${username}/ready`).set(true)
-          .then(() => {
-            battleIsReady = true;
-            battleReadyBtn.textContent = '準備完了';
-            battleReadyBtn.disabled = true;
-            battleToastMsg('準備完了！ 相手を待っています');
-          })
-          .catch((err) => {
-            battleToastMsg('準備エラー: ' + err.message);
-          });
-      }
-
-      function battleAnswer() {
-        if (!battleRoomId || !battleIsPlaying || battleIsFinished) {
-          battleToastMsg('対戦が開始されていません');
-          return;
-        }
-        const username = getUsername();
-        battleRef.child(`${battleRoomId}/players/${username}/solved`).once('value')
-          .then((snap) => {
-            if (snap.val() === true) { battleToastMsg('既に解答済みです'); return; }
-            const x = parseFloat(bInputX.value);
-            const y = parseFloat(bInputY.value);
-            if (isNaN(x) || isNaN(y)) { battleToastMsg('数値を入力'); return; }
-            return battleRef.child(`${battleRoomId}/equation`).once('value')
-              .then((eqSnap) => {
-                const eq = eqSnap.val();
-                if (!eq) { battleToastMsg('問題がありません'); return; }
-                const eps = 0.001;
-                const ok1 = Math.abs(eq.a1 * x + eq.b1 * y - eq.c1) < eps;
-                const ok2 = Math.abs(eq.a2 * x + eq.b2 * y - eq.c2) < eps;
-                if (ok1 && ok2) {
-                  const updates = {};
-                  updates[`players/${username}/solved`] = true;
-                  updates[`players/${username}/score`] = (battleYourScore || 0) + 1;
-                  return battleRef.child(`${battleRoomId}/players`).once('value')
-                    .then((pSnap) => {
-                      const players = pSnap.val() || {};
-                      const allSolved = Object.keys(players).every(n => players[n]?.solved === true);
-                      return battleRef.child(battleRoomId).update(updates)
-                        .then(() => {
-                          battleToastMsg('正解！ +1点');
-                          playCorrectSound();
-                          if (allSolved) {
-                            battleRef.child(battleRoomId).update({
-                              status: 'waiting',
-                              equation: null,
-                              round: battleRound
-                            }).then(() => {
-                              const resetUpdates = {};
-                              Object.keys(players).forEach(n => { resetUpdates[`players/${n}/ready`] = false; });
-                              battleRef.child(battleRoomId).update(resetUpdates);
-                              battleIsReady = false;
-                              battleReadyBtn.disabled = false;
-                              battleReadyBtn.textContent = '準備OK';
-                              battleToastMsg('次のラウンドへ');
-                            });
-                          }
-                        });
-                    });
-                } else {
-                  battleToastMsg('不正解');
-                  playWrongSound();
-                }
-              });
-          })
-          .catch((err) => {
-            battleToastMsg('解答エラー: ' + err.message);
-          });
-      }
-
-      function exitBattleRoom() {
-        if (battleListener) { battleListener.off();
-          battleListener = null; }
-        if (battleRoomId && battleRef) {
-          battleRef.child(battleRoomId).once('value')
-            .then((snap) => {
-              const data = snap.val();
-              if (data) {
-                const username = getUsername();
-                const updates = {};
-                updates[`players/${username}`] = null;
-                battleRef.child(battleRoomId).update(updates);
-              }
-            })
-            .catch(() => {});
-        }
-        battleRoomId = null;
-        battleIsReady = false;
-        battleIsPlaying = false;
-        battleIsFinished = false;
-        battleYourScore = 0;
-        battleOppScore = 0;
-        battleRound = 0;
-        battleOpponentName = '';
-        battleMySolved = false;
-        battleOppSolved = false;
-        battleWaitingForMatch = false;
-        battleIsMatched = false;
-        roomStatus.textContent = '-';
-        opponentNameDisplay.textContent = '待機中';
-        battleResult.style.display = 'none';
-        battleResult.textContent = '';
-        updateBattleUI();
-        bEq1a.textContent = '?';
-        bEq1b.textContent = '?';
-        bEq1c.textContent = '?';
-        bEq2a.textContent = '?';
-        bEq2b.textContent = '?';
-        bEq2c.textContent = '?';
-        battleReadyBtn.disabled = false;
-        battleReadyBtn.textContent = '準備OK';
-        battleAnswerBtn.disabled = false;
-        battleToastMsg('退出しました');
-        updateBattleAreas();
-        stopBgm();
-      }
-
-      // ============================================================
-      //  アカウント削除
-      // ============================================================
-      function deleteAccount() {
-        const name = getUsername();
-        if (!name || name === '名無し') { toastMessage('先にユーザー名を設定してください'); return; }
-        const myEntry = allRankingData.find(r => r.username === name);
-        if (!myEntry) { toastMessage(`「${name}」の記録は見つかりません`); return; }
-        if (!confirm(`「${name}」のアカウントと全ての記録を削除しますか？`)) return;
-        if (rankingRef) {
-          rankingRef.once('value')
-            .then((snap) => {
-              const data = snap.val();
-              if (!data) { toastMessage('削除するデータがありません'); return; }
-              const updates = {};
-              let found = false;
-              Object.keys(data).forEach(key => {
-                if (data[key].username === name) { updates[key] = null;
-                  found = true; }
-              });
-              if (!found) { toastMessage(`「${name}」の記録は見つかりません`); return; }
-              return rankingRef.update(updates);
-            })
-            .then(() => {
-              allRankingData = allRankingData.filter(r => r.username !== name);
-              localStorage.setItem('rank_v5_all', JSON.stringify(allRankingData));
-              deleteCookie('eq_username');
-              deleteCookie('eq_name_locked');
-              usernameInput.value = '';
-              currentUsername = '';
-              isNameLocked = false;
-              updateNameLockStatus();
-              toastMessage(`「${name}」のアカウントと記録を削除しました`);
-              renderRanking();
-              resetGame();
-              stopBgm();
-            })
-            .catch(() => toastMessage('削除に失敗しました'));
-        } else {
-          allRankingData = allRankingData.filter(r => r.username !== name);
-          localStorage.setItem('rank_v5_all', JSON.stringify(allRankingData));
-          deleteCookie('eq_username');
-          deleteCookie('eq_name_locked');
-          usernameInput.value = '';
-          currentUsername = '';
-          isNameLocked = false;
-          updateNameLockStatus();
-          toastMessage('アカウントと記録を削除しました (ローカル)');
-          renderRanking();
-          resetGame();
-          stopBgm();
-        }
-      }
-
-      // ============================================================
-      //  トースト
-      // ============================================================
-      function toastMessage(msg) {
-        toast.textContent = msg;
-        setTimeout(() => { if (toast.textContent === msg) toast.textContent = '挑戦ボタンでスタート'; }, 3000);
-      }
-
-      // ============================================================
-      //  ランキング桁タブ
-      // ============================================================
-      rankTabContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.rank-tab-btn');
-        if (!btn) return;
-        const digit = parseInt(btn.dataset.digit, 10);
-        if (isNaN(digit)) return;
-        rankTabContainer.querySelectorAll('.rank-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedDigit = digit;
-        renderRanking();
-      });
-
-      // ============================================================
-      //  ユーザー名
-      // ============================================================
-      function loadUsernameFromCookie() {
-        const saved = getCookie('eq_username');
-        const locked = getCookie('eq_name_locked');
-        if (saved) { usernameInput.value = saved;
-          currentUsername = saved; }
-        if (locked === 'true') isNameLocked = true;
-        updateNameLockStatus();
-      }
-
-      saveUsernameBtn.addEventListener('click', () => {
-        if (isNameLocked) { toastMessage('名前は一度設定すると変更できません'); return; }
-        const name = usernameInput.value.trim();
-        if (!name) { toastMessage('名前を入力してください'); return; }
-        const exists = allRankingData.some(r => r.username === name);
-        if (exists) { toastMessage(`「${name}」は既に使用されています`); return; }
-        isNameLocked = true;
-        setCookie('eq_username', name);
-        setCookie('eq_name_locked', 'true');
-        currentUsername = name;
-        updateNameLockStatus();
-        toastMessage(`ユーザー名: ${name} を保存しました (変更不可)`);
-      });
-
-      // ============================================================
-      //  サウンド
-      // ============================================================
-      volumeSlider.addEventListener('input', () => {
-        masterVolume = parseInt(volumeSlider.value, 10) / 100;
-        volumeLabel.textContent = `${Math.round(masterVolume * 100)}%`;
-      });
-
-      toggleSoundBtn.addEventListener('click', () => {
-        soundEnabled = !soundEnabled;
-        toggleSoundBtn.textContent = soundEnabled ? 'オン' : 'オフ';
-        if (!soundEnabled) stopBgm();
-        else { initAudio(); if (isGameActive && !isSolved) startBgm(); }
-        toastMessage(soundEnabled ? 'サウンドオン' : 'サウンドオフ');
-      });
-
-      // ============================================================
-      //  イベント
-      // ============================================================
-      checkBtn.addEventListener('click', checkAnswer);
-      newGameBtn.addEventListener('click', newGame);
-      stopBtn.addEventListener('click', resetGame);
-      deleteAccountBtn.addEventListener('click', deleteAccount);
-
-      battleCreateBtn.addEventListener('click', createBattleRoom);
-      battleJoinBtn.addEventListener('click', joinBattleRoom);
-      battleRandomBtn.addEventListener('click', randomMatch);
-      battleReadyBtn.addEventListener('click', setBattleReady);
-      battleAnswerBtn.addEventListener('click', battleAnswer);
-      battleExitBtn.addEventListener('click', exitBattleRoom);
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          if (document.activeElement === inputX || document.activeElement === inputY) checkAnswer();
-          if (document.activeElement === bInputX || document.activeElement === bInputY) battleAnswer();
-        }
-      });
-
-      digitSelect.addEventListener('change', () => { toastMessage(`桁数を ${digitSelect.value} に変更`); });
-
-      // ============================================================
-      //  初期化
-      // ============================================================
-      function init() {
-        loadUsernameFromCookie();
-        loadRanking();
-        isGameActive = false;
-        isSolved = false;
-        checkBtn.disabled = true;
-        statusMsg.textContent = '待機';
-        resetTimer();
-        updateBattleUI();
-        updateBattleAreas();
-
-        document.addEventListener('click', () => {
-          if (!audioCtx) { try { audioCtx = new(window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
-        }, { once: true });
-      }
-
-      init();
-    })();
-  </script>
+/* =========================================================
+   UTIL
+   ========================================================= */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+</script>
 </body>
 </html>
